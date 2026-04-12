@@ -4,8 +4,9 @@ import { Icon } from '../../../components/Icon';
 import {
   db_listStaff, db_addStaffMember, db_updateStaffMember, db_deleteStaffMember,
   db_listShifts, db_addShift, db_updateShift, db_deleteShift,
+  db_listAttendance, db_upsertAttendance, db_seedAttendance,
   type DemoStaffMember, type DemoShift, type StaffRole, type StaffStatus, type ShiftDay,
-  type DemoRestaurant,
+  type DemoRestaurant, type DemoAttendanceRecord, type AttendanceStatus,
 } from '../../demoDb';
 
 // --- Constants ----------------------------------------------------------------
@@ -37,7 +38,7 @@ function formatWeekLabel(weekStart: string): string {
   const end = new Date(weekStart);
   end.setDate(end.getDate() + 6);
   const fmt = (dt: Date) => dt.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
-  return `${fmt(d)} – ${fmt(end)}, ${end.getFullYear()}`;
+  return `${fmt(d)} ï¿½ ${fmt(end)}, ${end.getFullYear()}`;
 }
 
 function getDayDate(weekStart: string, dayIndex: number): string {
@@ -132,14 +133,14 @@ function StaffModal({ title, form, onChange, onSave, onClose, saving }: {
             <input type="email" value={form.email} onChange={e => set('email', e.target.value)} placeholder="jane@example.com" className={inputCls} />
           </FieldWrap>
           <FieldWrap label="Notes (optional)">
-            <textarea value={form.notes} onChange={e => set('notes', e.target.value)} rows={2} placeholder="Any notes…" className={`${inputCls} resize-none`} />
+            <textarea value={form.notes} onChange={e => set('notes', e.target.value)} rows={2} placeholder="Any notesï¿½" className={`${inputCls} resize-none`} />
           </FieldWrap>
         </div>
         <div className="flex gap-3 p-5 pt-0">
           <button onClick={onClose} className="flex-1 px-4 py-2.5 rounded-xl border border-cream-200 text-stone-600 text-sm font-semibold hover:bg-cream-50 transition-colors">Cancel</button>
           <button onClick={onSave} disabled={saving}
             className="flex-1 px-4 py-2.5 rounded-xl bg-forest-900 text-white text-sm font-bold hover:bg-forest-900/90 transition-colors disabled:opacity-60 flex items-center justify-center gap-2">
-            {saving ? <><Icon name="autorenew" size={16} /> Saving…</> : <><Icon name="check" size={16} /> Save</>}
+            {saving ? <><Icon name="autorenew" size={16} /> Savingï¿½</> : <><Icon name="check" size={16} /> Save</>}
           </button>
         </div>
       </div>
@@ -169,7 +170,7 @@ function ShiftModal({ form, onChange, staff, onSave, onClose, saving, editId }: 
         <div className="p-5 space-y-4">
           <FieldWrap label="Staff Member *">
             <select value={form.staffId} onChange={e => set('staffId', e.target.value)} className={inputCls}>
-              <option value="">— Select staff member —</option>
+              <option value="">ï¿½ Select staff member ï¿½</option>
               {staff.filter(s => s.status === 'active').map(s => (
                 <option key={s.id} value={s.id}>{s.name} ({s.role})</option>
               ))}
@@ -189,14 +190,14 @@ function ShiftModal({ form, onChange, staff, onSave, onClose, saving, editId }: 
             </FieldWrap>
           </div>
           <FieldWrap label="Notes (optional)">
-            <input value={form.notes} onChange={e => set('notes', e.target.value)} placeholder="Any shift notes…" className={inputCls} />
+            <input value={form.notes} onChange={e => set('notes', e.target.value)} placeholder="Any shift notesï¿½" className={inputCls} />
           </FieldWrap>
         </div>
         <div className="flex gap-3 p-5 pt-0">
           <button onClick={onClose} className="flex-1 px-4 py-2.5 rounded-xl border border-cream-200 text-stone-600 text-sm font-semibold hover:bg-cream-50">Cancel</button>
           <button onClick={onSave} disabled={saving}
             className="flex-1 px-4 py-2.5 rounded-xl bg-forest-900 text-white text-sm font-bold hover:bg-forest-900/90 transition-colors disabled:opacity-60 flex items-center justify-center gap-2">
-            {saving ? 'Saving…' : <><Icon name="check" size={16} /> Save Shift</>}
+            {saving ? 'Savingï¿½' : <><Icon name="check" size={16} /> Save Shift</>}
           </button>
         </div>
       </div>
@@ -227,7 +228,7 @@ function DeleteConfirm({ label, onConfirm, onClose }: { label: string; onConfirm
 
 // --- Main Component ------------------------------------------------------------
 export default function RestoStaff({ restaurant }: { restaurant: DemoRestaurant }) {
-  const [view, setView] = useState<'roster' | 'schedule'>('roster');
+  const [view, setView] = useState<'roster' | 'schedule' | 'attendance'>('roster');
   const [staff, setStaff] = useState<DemoStaffMember[]>([]);
   const [shifts, setShifts] = useState<DemoShift[]>([]);
   const [weekStart, setWeekStart] = useState(() => getWeekStart(new Date()));
@@ -248,11 +249,23 @@ export default function RestoStaff({ restaurant }: { restaurant: DemoRestaurant 
   const [shiftSaving, setShiftSaving] = useState(false);
   const [deleteShift, setDeleteShiftTarget] = useState<DemoShift | null>(null);
 
-  const loadStaff = () => setStaff(db_listStaff(restaurant.id));
+  // --- Attendance state -------------------------------------------------------
+  const [attendanceDate, setAttendanceDate] = useState<string>(new Date().toISOString().slice(0, 10));
+  const [attendance, setAttendance] = useState<DemoAttendanceRecord[]>([]);
+
+
+  const loadStaff = () => {
+    const members = db_listStaff(restaurant.id);
+    setStaff(members);
+    if (members.length > 0) db_seedAttendance(restaurant.id, members.map(m => m.id));
+    setAttendance(db_listAttendance(restaurant.id));
+  };
   const loadShifts = () => setShifts(db_listShifts(restaurant.id, weekStart));
+  const loadAttendance = () => setAttendance(db_listAttendance(restaurant.id));
 
   useEffect(() => { loadStaff(); }, [restaurant.id]);
   useEffect(() => { loadShifts(); }, [restaurant.id, weekStart]);
+  useEffect(() => { loadAttendance(); }, [restaurant.id, attendanceDate]);
 
   // --- Roster filters ---------------------------------------------------------
   const visibleStaff = staff.filter(s => {
@@ -341,7 +354,7 @@ export default function RestoStaff({ restaurant }: { restaurant: DemoRestaurant 
       {staffModal && <StaffModal title={editStaff ? 'Edit Staff Member' : 'Add Staff Member'} form={staffForm} onChange={setStaffForm} onSave={handleSaveStaff} onClose={() => setStaffModal(false)} saving={staffSaving} />}
       {deleteStaff && <DeleteConfirm label={deleteStaff.name} onConfirm={handleDeleteStaff} onClose={() => setDeleteStaff(null)} />}
       {shiftModal && <ShiftModal form={shiftForm} onChange={setShiftForm} staff={staff} onSave={handleSaveShift} onClose={() => setShiftModal(false)} saving={shiftSaving} editId={editShift?.id ?? null} />}
-      {deleteShift && <DeleteConfirm label={`${staff.find(s => s.id === deleteShift.staffId)?.name ?? 'Shift'} — ${deleteShift.day} ${deleteShift.startTime}–${deleteShift.endTime}`} onConfirm={handleDeleteShift} onClose={() => setDeleteShiftTarget(null)} />}
+      {deleteShift && <DeleteConfirm label={`${staff.find(s => s.id === deleteShift.staffId)?.name ?? 'Shift'} ï¿½ ${deleteShift.day} ${deleteShift.startTime}ï¿½${deleteShift.endTime}`} onConfirm={handleDeleteShift} onClose={() => setDeleteShiftTarget(null)} />}
 
       {/* Stats Row */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
@@ -368,7 +381,7 @@ export default function RestoStaff({ restaurant }: { restaurant: DemoRestaurant 
                 const hrs = ((eh * 60 + em) - (sh0 * 60 + sm0)) / 60;
                 if (hrs > 0) cost += hrs * member.hourlyRate;
               });
-              return cost > 0 ? `$${cost.toLocaleString('en-US', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}` : '—';
+              return cost > 0 ? `$${cost.toLocaleString('en-US', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}` : 'ï¿½';
             })()}
           </div>
           <div className="text-xs text-stone-400 mt-0.5">for this week</div>
@@ -390,7 +403,7 @@ export default function RestoStaff({ restaurant }: { restaurant: DemoRestaurant 
         {/* Sub-Nav */}
         <div className="p-4 border-b border-cream-200 bg-cream-100/50 flex flex-col sm:flex-row justify-between items-center gap-3">
           <div className="flex bg-white p-1 rounded-xl border border-cream-200 shadow-sm">
-            {[{ id: 'roster', label: 'Team Roster', icon: 'group' }, { id: 'schedule', label: 'Weekly Schedule', icon: 'calendar_month' }].map(t => (
+            {[{ id: 'roster', label: 'Team Roster', icon: 'group' }, { id: 'schedule', label: 'Weekly Schedule', icon: 'calendar_month' }, { id: 'attendance', label: 'Attendance', icon: 'event_available' }].map(t => (
               <button key={t.id} onClick={() => setView(t.id as any)}
                 className={`flex items-center gap-2 px-5 py-2 rounded-lg text-xs font-bold uppercase tracking-widest transition-all ${view === t.id ? 'bg-forest-900 text-white shadow-md' : 'text-stone-400 hover:text-stone-700'}`}>
                 <Icon name={t.icon} size={14} /> {t.label}
@@ -405,7 +418,7 @@ export default function RestoStaff({ restaurant }: { restaurant: DemoRestaurant 
                 {ROLES.map(r => <option key={r} value={r}>{r}</option>)}
               </select>
               <div className="relative flex-1">
-                <input type="text" value={search} onChange={e => setSearch(e.target.value)} placeholder="Search name or role…"
+                <input type="text" value={search} onChange={e => setSearch(e.target.value)} placeholder="Search name or roleï¿½"
                   className="w-full pl-8 pr-4 py-2 bg-white border border-cream-200 rounded-xl text-xs outline-none shadow-sm" />
                 <Icon name="search" size={14} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-stone-400" />
               </div>
@@ -462,7 +475,7 @@ export default function RestoStaff({ restaurant }: { restaurant: DemoRestaurant 
                       </span>
                     </div>
                     <div className="col-span-2 text-xs font-mono text-stone-700">
-                      {member.hourlyRate != null ? `$${member.hourlyRate.toFixed(2)}/hr` : <span className="text-stone-300">—</span>}
+                      {member.hourlyRate != null ? `$${member.hourlyRate.toFixed(2)}/hr` : <span className="text-stone-300">ï¿½</span>}
                     </div>
                     <div className="col-span-1 flex items-center justify-end gap-0.5">
                       <button onClick={() => openEditStaff(member)}
@@ -559,7 +572,7 @@ export default function RestoStaff({ restaurant }: { restaurant: DemoRestaurant 
                             <div key={day} className="col-span-1 min-h-[60px] rounded-xl border border-cream-200/60 bg-cream-50/30 p-1.5 space-y-1 group/cell hover:border-cream-300 transition-colors">
                               {dayShifts.map(sh => (
                                 <div key={sh.id} className={`px-2 py-1.5 rounded-lg text-[10px] font-bold border-l-2 leading-tight ${colorCls} relative group/shift`}>
-                                  <div>{sh.startTime}–{sh.endTime}</div>
+                                  <div>{sh.startTime}ï¿½{sh.endTime}</div>
                                   <div className="text-[9px] opacity-70">{shiftHours(sh)}</div>
                                   {sh.notes && <div className="text-[9px] italic opacity-60 mt-0.5 truncate">{sh.notes}</div>}
                                   {/* Shift action buttons */}
@@ -601,7 +614,7 @@ export default function RestoStaff({ restaurant }: { restaurant: DemoRestaurant 
                         }, 0);
                       return (
                         <div key={day} className="col-span-1 py-1.5 rounded-lg bg-cream-100/60 text-center text-[10px] font-bold text-stone-600">
-                          {dayHrs > 0 ? `${dayHrs.toFixed(1)}h` : <span className="text-stone-300">—</span>}
+                          {dayHrs > 0 ? `${dayHrs.toFixed(1)}h` : <span className="text-stone-300">ï¿½</span>}
                         </div>
                       );
                     })}
@@ -611,6 +624,195 @@ export default function RestoStaff({ restaurant }: { restaurant: DemoRestaurant 
             )}
           </div>
         )}
+
+        {view === 'attendance' && (
+          <div className="space-y-6">
+            {/* Date selector + summary */}
+            <div className="flex flex-col sm:flex-row sm:items-center gap-4">
+              <div className="flex items-center gap-3">
+                <label className="text-xs font-bold text-stone-500 uppercase tracking-widest">Date</label>
+                <input
+                  type="date"
+                  value={attendanceDate}
+                  onChange={e => setAttendanceDate(e.target.value)}
+                  className="px-3 py-2 rounded-xl border border-cream-200 bg-cream-50 text-sm font-medium text-stone-800 focus:outline-none focus:border-forest-900/30"
+                />
+              </div>
+              <div className="flex gap-3 flex-wrap">
+                {(['present','late','half_day','absent'] as AttendanceStatus[]).map(s => {
+                  const count = attendance.filter(a => a.date === attendanceDate && a.status === s).length;
+                  const cfg: Record<AttendanceStatus, {label:string; bg:string; text:string}> = {
+                    present:  { label: 'Present',  bg: 'bg-green-50 border-green-200', text: 'text-green-700' },
+                    late:     { label: 'Late',     bg: 'bg-amber-50 border-amber-200', text: 'text-amber-700' },
+                    half_day: { label: 'Half Day', bg: 'bg-blue-50 border-blue-200',   text: 'text-blue-700' },
+                    absent:   { label: 'Absent',   bg: 'bg-red-50 border-red-200',     text: 'text-red-700' },
+                  };
+                  return (
+                    <div key={s} className={`px-4 py-2 rounded-xl border ${cfg[s].bg} ${cfg[s].text} flex items-center gap-2`}>
+                      <span className="text-lg font-bold">{count}</span>
+                      <span className="text-xs font-bold">{cfg[s].label}</span>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+
+            {/* Attendance table */}
+            {staff.filter(m => m.status === 'active').length === 0 ? (
+              <div className="text-center py-16 text-stone-400">
+                <Icon name="event_available" size={40} className="mx-auto mb-3 opacity-30" />
+                <p className="text-sm font-medium">Add active staff members to track attendance.</p>
+              </div>
+            ) : (
+              <div className="bg-white rounded-2xl border border-cream-200 shadow-sm overflow-hidden">
+                <div className="grid grid-cols-12 gap-2 px-5 py-3 bg-cream-50/80 border-b border-cream-200 text-[10px] font-bold text-stone-400 uppercase tracking-widest">
+                  <div className="col-span-3">Name</div>
+                  <div className="col-span-2">Role</div>
+                  <div className="col-span-2">Clock In</div>
+                  <div className="col-span-2">Clock Out</div>
+                  <div className="col-span-2">Status</div>
+                  <div className="col-span-1">Hours</div>
+                </div>
+                {staff.filter(m => m.status === 'active').map(member => {
+                  const rec = attendance.find(a => a.staffId === member.id && a.date === attendanceDate);
+                  const status: AttendanceStatus = rec?.status ?? 'absent';
+                  const statusCfg: Record<AttendanceStatus, {label:string; cls:string}> = {
+                    present:  { label: 'Present',  cls: 'bg-green-100 text-green-700' },
+                    late:     { label: 'Late',     cls: 'bg-amber-100 text-amber-700' },
+                    half_day: { label: 'Half Day', cls: 'bg-blue-100 text-blue-700' },
+                    absent:   { label: 'Absent',   cls: 'bg-red-100 text-red-600' },
+                  };
+                  const saveRec = (patch: Partial<DemoAttendanceRecord>) => {
+                    const updated = db_upsertAttendance({
+                      id: rec?.id,
+                      staffId: member.id,
+                      restaurantId: restaurant.id,
+                      date: attendanceDate,
+                      clockIn: rec?.clockIn ?? '',
+                      clockOut: rec?.clockOut ?? '',
+                      status: rec?.status ?? 'present',
+                      notes: rec?.notes ?? '',
+                      ...patch,
+                    });
+                    setAttendance(prev => [...prev.filter(a => !(a.staffId === member.id && a.date === attendanceDate)), updated]);
+                  };
+                  const workedHours = () => {
+                    if (!rec?.clockIn || !rec?.clockOut) return 'â€”';
+                    const [ih, im] = rec.clockIn.split(':').map(Number);
+                    const [oh, om] = rec.clockOut.split(':').map(Number);
+                    const mins = (oh * 60 + om) - (ih * 60 + im);
+                    if (mins <= 0) return 'â€”';
+                    const h = Math.floor(mins / 60);
+                    const m = mins % 60;
+                    return m > 0 ? `${h}h ${m}m` : `${h}h`;
+                  };
+                  return (
+                    <div key={member.id} className="grid grid-cols-12 gap-2 px-5 py-4 border-b border-cream-100 last:border-0 items-center hover:bg-cream-50/50 transition-colors">
+                      <div className="col-span-3 flex items-center gap-2">
+                        <div className="w-8 h-8 rounded-full bg-cream-100 flex items-center justify-center text-xs font-bold text-stone-600 flex-shrink-0">
+                          {member.name.slice(0, 2).toUpperCase()}
+                        </div>
+                        <span className="text-sm font-bold text-stone-800 truncate">{member.name}</span>
+                      </div>
+                      <div className="col-span-2 text-xs text-stone-500 font-medium truncate">{member.role}</div>
+                      <div className="col-span-2">
+                        <input
+                          type="time"
+                          value={rec?.clockIn ?? ''}
+                          onChange={e => saveRec({ clockIn: e.target.value, status: 'present' })}
+                          className="w-full px-2 py-1.5 rounded-lg border border-cream-200 bg-cream-50 text-xs font-medium text-stone-700 focus:outline-none focus:border-forest-900/30"
+                        />
+                      </div>
+                      <div className="col-span-2">
+                        <input
+                          type="time"
+                          value={rec?.clockOut ?? ''}
+                          onChange={e => saveRec({ clockOut: e.target.value })}
+                          className="w-full px-2 py-1.5 rounded-lg border border-cream-200 bg-cream-50 text-xs font-medium text-stone-700 focus:outline-none focus:border-forest-900/30"
+                        />
+                      </div>
+                      <div className="col-span-2">
+                        <select
+                          value={status}
+                          onChange={e => saveRec({ status: e.target.value as AttendanceStatus })}
+                          className={`text-xs font-bold px-2 py-1.5 rounded-lg border-0 focus:outline-none cursor-pointer w-full ${statusCfg[status].cls}`}
+                        >
+                          {(['present','late','half_day','absent'] as AttendanceStatus[]).map(s => (
+                            <option key={s} value={s}>{statusCfg[s].label}</option>
+                          ))}
+                        </select>
+                      </div>
+                      <div className="col-span-1 text-xs text-stone-500 font-bold text-right">
+                        {workedHours()}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+
+            {/* 7-day attendance history */}
+            {staff.filter(m => m.status === 'active').length > 0 && (
+              <div className="bg-white rounded-2xl border border-cream-200 shadow-sm p-5">
+                <h3 className="text-sm font-bold text-stone-700 mb-4">7-Day Attendance Summary</h3>
+                <div className="overflow-x-auto">
+                  <table className="w-full text-xs">
+                    <thead>
+                      <tr className="text-[10px] font-bold text-stone-400 uppercase tracking-widest">
+                        <th className="text-left pb-3 pr-4 min-w-[120px]">Staff Member</th>
+                        {Array.from({length:7},(_,i)=>{
+                          const d = new Date();
+                          d.setDate(d.getDate() - 6 + i);
+                          return (
+                            <th key={i} className="text-center pb-3 px-2 w-14">
+                              <div>{d.toLocaleDateString('en-US',{weekday:'short'})}</div>
+                              <div className="font-medium normal-case text-stone-500">{d.getDate()}</div>
+                            </th>
+                          );
+                        })}
+                        <th className="text-center pb-3 px-2">Rate</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {staff.filter(m => m.status === 'active').map(member => {
+                        const statusEmoji: Record<AttendanceStatus, string> = {
+                          present: 'ðŸŸ¢', late: 'ðŸŸ¡', half_day: 'ðŸ”µ', absent: 'ðŸ”´',
+                        };
+                        const days = Array.from({length:7},(_,i)=>{
+                          const d = new Date();
+                          d.setDate(d.getDate() - 6 + i);
+                          return d.toISOString().slice(0,10);
+                        });
+                        const presentCount = days.filter(date => {
+                          const rec = attendance.find(a => a.staffId === member.id && a.date === date);
+                          return rec && rec.status !== 'absent';
+                        }).length;
+                        return (
+                          <tr key={member.id} className="border-t border-cream-100">
+                            <td className="py-3 pr-4 font-bold text-stone-700">{member.name}</td>
+                            {days.map(date => {
+                              const rec = attendance.find(a => a.staffId === member.id && a.date === date);
+                              return <td key={date} className="text-center py-3 px-2 text-base">{rec ? statusEmoji[rec.status] : 'â¬œ'}</td>;
+                            })}
+                            <td className="text-center py-3 px-2">
+                              <span className={`text-xs font-bold px-2 py-1 rounded-lg ${presentCount >= 6 ? 'bg-green-100 text-green-700' : presentCount >= 4 ? 'bg-amber-100 text-amber-700' : 'bg-red-100 text-red-600'}`}>
+                                {Math.round(presentCount/7*100)}%
+                              </span>
+                            </td>
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                  </table>
+                  <div className="flex gap-4 mt-4 text-[10px] text-stone-400 font-medium">
+                    <span>ðŸŸ¢ Present</span><span>ðŸŸ¡ Late</span><span>ðŸ”µ Half Day</span><span>ðŸ”´ Absent</span><span>â¬œ No Record</span>
+                  </div>
+                </div>
+              </div>
+            )}
+          </div>
+        )}
+
       </div>
     </div>
   );

@@ -415,6 +415,62 @@ export function db_deleteTable(id: string) {
 }
 
 // ─────────────────────────────────────────
+// ATTENDANCE
+// ─────────────────────────────────────────
+const ATTKEY = 'liora_demo_attendance';
+
+export type AttendanceStatus = 'present' | 'absent' | 'late' | 'half_day';
+
+export type DemoAttendanceRecord = {
+  id: string;
+  staffId: string;
+  restaurantId: string;
+  date: string;        // YYYY-MM-DD
+  clockIn: string;     // HH:MM or ''
+  clockOut: string;    // HH:MM or ''
+  status: AttendanceStatus;
+  notes: string;
+};
+
+export function db_listAttendance(restaurantId: string, date?: string): DemoAttendanceRecord[] {
+  const all = read<DemoAttendanceRecord[]>(ATTKEY, []).filter(a => a.restaurantId === restaurantId);
+  return date ? all.filter(a => a.date === date) : all;
+}
+
+export function db_upsertAttendance(record: Omit<DemoAttendanceRecord, 'id'> & { id?: string }): DemoAttendanceRecord {
+  const all = read<DemoAttendanceRecord[]>(ATTKEY, []);
+  const existing = all.findIndex(a => a.staffId === record.staffId && a.date === record.date);
+  const final: DemoAttendanceRecord = { ...record, id: record.id || uid() };
+  if (existing >= 0) { all[existing] = final; } else { all.push(final); }
+  write(ATTKEY, all);
+  return final;
+}
+
+export function db_deleteAttendance(id: string) {
+  write(ATTKEY, read<DemoAttendanceRecord[]>(ATTKEY, []).filter(x => x.id !== id));
+}
+
+export function db_seedAttendance(restaurantId: string, staffIds: string[]) {
+  const existing = read<DemoAttendanceRecord[]>(ATTKEY, []).filter(a => a.restaurantId === restaurantId);
+  if (existing.length > 0) return;
+  const records: DemoAttendanceRecord[] = [];
+  const today = new Date();
+  const statuses: AttendanceStatus[] = ['present', 'present', 'present', 'late', 'present', 'absent', 'present', 'half_day'];
+  staffIds.forEach(staffId => {
+    for (let d = 6; d >= 0; d--) {
+      const date = new Date(today);
+      date.setDate(date.getDate() - d);
+      const dateStr = date.toISOString().slice(0, 10);
+      const status = statuses[Math.floor(Math.random() * statuses.length)];
+      const clockIn = status === 'absent' ? '' : status === 'late' ? '09:' + String(Math.floor(Math.random() * 30) + 20).padStart(2, '0') : '09:00';
+      const clockOut = status === 'absent' ? '' : status === 'half_day' ? '13:00' : '17:' + String(Math.floor(Math.random() * 30)).padStart(2, '0');
+      records.push({ id: uid(), staffId, restaurantId, date: dateStr, clockIn, clockOut, status, notes: '' });
+    }
+  });
+  write(ATTKEY, [...existing, ...records]);
+}
+
+// ─────────────────────────────────────────
 // RESTAURANT HELPERS
 // ─────────────────────────────────────────
 export function db_getRestaurantById(id: string): DemoRestaurant | null {

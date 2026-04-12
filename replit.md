@@ -57,6 +57,29 @@ cd liora-main && npm run dev
 - `GEMINI_API_KEY` - Google Gemini API key (required for AI features)
 - Supabase credentials configured in `src/lib/supabase.ts`
 
+## Recent Features Added
+
+### Staff Management (Staff.tsx)
+Enhanced with a third tab: **Attendance**
+- Daily clock-in / clock-out time entry per staff member
+- Status tracking: Present, Late, Half Day, Absent
+- Calculated worked hours per record
+- 7-day attendance summary table with emoji status indicators and attendance rate %
+- Attendance data seeded with realistic demo data on first load
+
+### Inventory (Inventory.tsx)
+Enhanced with **Stock Summary** section at the top:
+- Total items count and estimated inventory value
+- Low/Critical stock count and Out of Stock count (with highlighted warning cards)
+- Category breakdown bar chart showing item distribution and at-risk alerts
+
+### Chef GPT (ChefGPT.tsx)
+New AI recipe assistant for kitchen staff:
+- Chat interface themed for chefs (amber/orange colour scheme)
+- Smart contextual responses for: recipes (Béarnaise, duck, pasta, stock), substitutions, cooking temperatures, seasoning techniques
+- Suggested query chips for quick access
+- Added to Operations section in sidebar navigation as "Chef GPT"
+
 ## Workflow
 
 - **Start application**: `cd liora-main && npm run dev` (port 5000, webview)

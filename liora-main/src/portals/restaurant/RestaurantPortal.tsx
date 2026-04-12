@@ -22,6 +22,7 @@ import RestoCustomerInsights from './pages/CustomerInsights';
 import RestoChefSpecials from './pages/ChefSpecials';
 import RestoTables from './pages/Tables';
 import RestoLoyalty from './pages/LoyaltyProgram';
+import RestoChefGPT from './ChefGPT';
 const MENU_GROUPS = [
   {
     label: 'Intelligence',
@@ -41,6 +42,7 @@ const MENU_GROUPS = [
       { id: 'inventory', label: 'Inventory', icon: 'inventory_2' },
       { id: 'tables', label: 'Table Management', icon: 'table_restaurant' },
       { id: 'staff', label: 'Staff & Scheduling', icon: 'badge' },
+      { id: 'chef_gpt', label: 'Chef GPT', icon: 'soup_kitchen', isNew: true },
     ]
   },
   {
@@ -99,6 +101,7 @@ export default function RestaurantPortal(){
       case 'inventory': return <RestoInventory restaurant={restaurant} />;
       case 'tables': return <RestoTables restaurant={restaurant} />;
       case 'staff': return <RestoStaff restaurant={restaurant} />;
+      case 'chef_gpt': return <RestoChefGPT restaurant={restaurant} />;
       case 'marketing': return <RestoMarketingStudio restaurant={restaurant} />;
       case 'promotions': return <RestoPromotions restaurant={restaurant} />;
       case 'loyalty': return <RestoLoyalty restaurant={restaurant} />;

@@ -343,7 +343,73 @@ export default function RestoInventory({ restaurant }: { restaurant: DemoRestaur
       {/* Inventory Table */}
       <div className="bg-white rounded-2xl shadow-sm border border-cream-200 overflow-hidden">
 
-        {/* Toolbar */}
+        {/* Stock Summary Cards */}
+      {(() => {
+        const total = items.length;
+        const outCount = items.filter(i => deriveStatus(i.quantity, i.reorderPoint) === 'out').length;
+        const criticalCount = items.filter(i => deriveStatus(i.quantity, i.reorderPoint) === 'critical').length;
+        const lowCount = items.filter(i => deriveStatus(i.quantity, i.reorderPoint) === 'low').length;
+        const totalValue = items.reduce((s, i) => s + i.quantity * (i.costPerUnit ?? 0), 0);
+        const catBreakdown = CATEGORIES.map(cat => ({
+          cat,
+          count: items.filter(i => i.category === cat).length,
+          value: items.filter(i => i.category === cat).reduce((s, i) => s + i.quantity * (i.costPerUnit ?? 0), 0),
+        })).filter(c => c.count > 0);
+        return (
+          <>
+            <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+              <div className="p-5 bg-white rounded-2xl border border-cream-200 shadow-sm">
+                <div className="text-[10px] font-bold text-stone-400 uppercase tracking-widest mb-1">Total Items</div>
+                <div className="text-3xl font-lora font-bold text-stone-800">{total}</div>
+                <div className="text-xs text-stone-400 mt-1">across {catBreakdown.length} categories</div>
+              </div>
+              <div className="p-5 bg-white rounded-2xl border border-cream-200 shadow-sm">
+                <div className="text-[10px] font-bold text-stone-400 uppercase tracking-widest mb-1">Inventory Value</div>
+                <div className="text-3xl font-lora font-bold text-stone-800">${totalValue.toLocaleString('en-US', {minimumFractionDigits:2, maximumFractionDigits:2})}</div>
+                <div className="text-xs text-stone-400 mt-1">estimated cost value</div>
+              </div>
+              <div className="p-5 bg-white rounded-2xl border border-amber-100 shadow-sm" style={{borderLeftWidth:'4px', borderLeftColor:'rgb(251 191 36)'}}>
+                <div className="text-[10px] font-bold text-amber-500 uppercase tracking-widest mb-1">Low / Critical</div>
+                <div className="text-3xl font-lora font-bold text-amber-600">{lowCount + criticalCount}</div>
+                <div className="text-xs text-amber-500 mt-1">{criticalCount} critical, {lowCount} low stock</div>
+              </div>
+              <div className="p-5 bg-white rounded-2xl border border-red-100 shadow-sm" style={{borderLeftWidth:'4px', borderLeftColor:'rgb(248 113 113)'}}>
+                <div className="text-[10px] font-bold text-red-500 uppercase tracking-widest mb-1">Out of Stock</div>
+                <div className="text-3xl font-lora font-bold text-red-600">{outCount}</div>
+                <div className="text-xs text-red-400 mt-1">{outCount === 0 ? 'All items in stock' : 'Need immediate reorder'}</div>
+              </div>
+            </div>
+            {catBreakdown.length > 0 && (
+              <div className="bg-white rounded-2xl border border-cream-200 shadow-sm p-5">
+                <div className="flex items-center justify-between mb-4">
+                  <h3 className="text-sm font-bold text-stone-700">Stock by Category</h3>
+                  <span className="text-[10px] font-bold text-stone-400 uppercase tracking-widest">{total} total items</span>
+                </div>
+                <div className="space-y-2.5">
+                  {catBreakdown.sort((a,b) => b.count - a.count).map(({cat, count, value}) => {
+                    const pct = total > 0 ? (count / total) * 100 : 0;
+                    const catItems = items.filter(i => i.category === cat);
+                    const atRisk = catItems.filter(i => deriveStatus(i.quantity, i.reorderPoint) !== 'good').length;
+                    return (
+                      <div key={cat} className="flex items-center gap-3">
+                        <div className="w-24 text-xs font-bold text-stone-600 flex-shrink-0">{cat}</div>
+                        <div className="flex-1 bg-cream-100 rounded-full h-2 overflow-hidden">
+                          <div className="h-full bg-forest-900/60 rounded-full transition-all" style={{width: pct + '%'}} />
+                        </div>
+                        <div className="text-xs font-bold text-stone-700 w-8 text-right">{count}</div>
+                        {atRisk > 0 && <span className="text-[9px] font-bold px-1.5 py-0.5 rounded-full bg-amber-100 text-amber-700">{atRisk} at risk</span>}
+                        {value > 0 && <span className="text-[9px] font-bold text-stone-400">${value.toFixed(0)}</span>}
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
+          </>
+        );
+      })()}
+
+      {/* Toolbar */}
         <div className="p-4 border-b border-cream-200 bg-cream-100/50 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
           {/* Status filter pills */}
           <div className="flex bg-cream-50/50 p-1 rounded-lg border border-cream-200 flex-shrink-0">
