@@ -148,6 +148,28 @@ export const DemoAuth: AuthAdapter = {
 
   signInFromSwitcher,
 
+  async signInWithGoogle() {
+    // Demo-mode Google Sign-In: creates a shared Google-style account and signs in.
+    const googleEmail = "google-demo@gmail.com";
+    const googlePassword = "__google_oauth_demo__";
+    const googleName = "Google User (Demo)";
+    const users = read<DemoUser[]>(UKEY, []);
+    let u = users.find(x => x.email === googleEmail);
+    if (!u) {
+      u = { id: cryptoRandom(), email: googleEmail, password: googlePassword, role: "user", name: googleName, lastUsedAt: Date.now() };
+      users.push(u);
+      write(UKEY, users);
+      upsertSavedAccount({ email: googleEmail, role: "user", name: googleName });
+    }
+    u.lastUsedAt = Date.now();
+    write(UKEY, users);
+    write(SKEY, { id: u.id, email: u.email, role: u.role, name: u.name });
+    localStorage.setItem(LKEY, u.email);
+    localStorage.setItem(PKEY, u.role);
+    upsertSavedAccount({ email: u.email, role: u.role, name: u.name });
+    emit();
+  },
+
   async signUpStaff(email, password, name, staffCode) {
     const users = read<DemoUser[]>(UKEY, []);
     if (users.some(u => u.email === email)) throw new Error('Email already registered.');
