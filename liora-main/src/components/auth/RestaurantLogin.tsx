@@ -12,20 +12,21 @@ type LoginType = 'owner' | 'staff';
 type OwnerMode = 'login' | 'register';
 type StaffMode = 'login' | 'register';
 
+const DEMO_EMAIL = 'demo@liora.restaurant';
+const DEMO_PASSWORD = 'demo1234';
+const DEMO_OWNER = 'Chef Marco';
+const DEMO_RESTAURANT = 'The Golden Fork';
+
 export default function RestaurantLogin({ onSwitchToUser }: RestaurantLoginProps) {
   const auth = getAuth();
 
-  // Top-level toggle: Owner vs Service Desk
   const [loginType, setLoginType] = useState<LoginType>('owner');
-
-  // Owner form
   const [ownerMode, setOwnerMode] = useState<OwnerMode>('login');
   const [ownerEmail, setOwnerEmail] = useState('');
   const [ownerPassword, setOwnerPassword] = useState('');
   const [ownerName, setOwnerName] = useState('');
   const [restaurantName, setRestaurantName] = useState('');
 
-  // Staff form
   const [staffMode, setStaffMode] = useState<StaffMode>('login');
   const [staffEmail, setStaffEmail] = useState('');
   const [staffPassword, setStaffPassword] = useState('');
@@ -34,9 +35,27 @@ export default function RestaurantLogin({ onSwitchToUser }: RestaurantLoginProps
 
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
+  const [demoLoading, setDemoLoading] = useState(false);
 
   const inp = "w-full px-4 py-3 rounded-xl bg-cream-50 border border-cream-200 text-stone-800 placeholder-stone-400 focus:outline-none focus:border-brand-400 focus:ring-1 focus:ring-brand-400/30 transition-all text-sm";
   const lbl = "block text-xs font-semibold text-stone-500 uppercase tracking-wider mb-1.5";
+
+  const handleDemoLogin = async () => {
+    setDemoLoading(true);
+    setError('');
+    try {
+      try {
+        await auth.signUpRestaurantOwner(DEMO_EMAIL, DEMO_PASSWORD, DEMO_OWNER, DEMO_RESTAURANT);
+      } catch {
+        // Already registered — that's fine
+      }
+      await auth.signInUser(DEMO_EMAIL, DEMO_PASSWORD);
+    } catch (err: any) {
+      setError(err.message || 'Demo login failed');
+    } finally {
+      setDemoLoading(false);
+    }
+  };
 
   const handleOwnerSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -100,6 +119,26 @@ export default function RestaurantLogin({ onSwitchToUser }: RestaurantLoginProps
             : staffMode === 'login' ? 'Operational view for front-of-house staff.' : 'Enter the staff code from your restaurant owner.'}
         </p>
       </div>
+
+      {/* Quick Demo Banner — only shown for owner login */}
+      {loginType === 'owner' && (
+        <button
+          onClick={handleDemoLogin}
+          disabled={demoLoading}
+          className="w-full mb-4 flex items-center justify-center gap-3 py-3.5 px-5 rounded-2xl bg-gradient-to-r from-amber-50 to-orange-50 border-2 border-amber-200 hover:border-amber-400 hover:from-amber-100 hover:to-orange-100 transition-all group shadow-sm"
+        >
+          {demoLoading ? (
+            <Spinner />
+          ) : (
+            <span className="text-2xl group-hover:scale-110 transition-transform">🍽️</span>
+          )}
+          <div className="text-left">
+            <p className="text-sm font-bold text-stone-800">Try the Demo Restaurant</p>
+            <p className="text-[11px] text-stone-500">Instant access — no signup needed</p>
+          </div>
+          <Icon name="arrow_forward" size={18} className="ml-auto text-amber-500 group-hover:translate-x-1 transition-transform" />
+        </button>
+      )}
 
       {/* Top-level type toggle */}
       <div className="flex gap-0 mb-5 p-1 rounded-xl border border-cream-200 bg-cream-100">
@@ -265,7 +304,6 @@ export default function RestaurantLogin({ onSwitchToUser }: RestaurantLoginProps
         </>
       )}
 
-      {/* Switch to diner login */}
       {onSwitchToUser && (
         <p className="text-center text-xs text-stone-400 mt-5">
           Looking to dine?{' '}
@@ -277,4 +315,3 @@ export default function RestaurantLogin({ onSwitchToUser }: RestaurantLoginProps
     </div>
   );
 }
-
