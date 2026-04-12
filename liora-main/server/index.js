@@ -15,7 +15,7 @@ const PORT = process.env.PORT || 3001;
 
 // ── Security middleware ────────────────────────────────────────────────────
 app.use(helmet({ contentSecurityPolicy: false }));
-app.use(cors({ origin: ['http://localhost:3000', 'http://localhost:5173'], credentials: true }));
+app.use(cors({ origin: true, credentials: true }));
 app.use(express.json({ limit: '2mb' }));
 
 // Rate limiting — 300 req / 15 min per IP
