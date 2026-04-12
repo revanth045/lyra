@@ -264,8 +264,16 @@ export const AccountSettings: React.FC<AccountSettingsProps> = ({ setView }) => 
                             </p>
                             <div className="mt-4 flex flex-wrap gap-2">
                                 {Object.entries(profile.profile).map(([key, value]) => {
-                                    const displayValue = Array.isArray(value) ? value.join(', ') : String(value);
-                                    if (!displayValue || displayValue === '0') return null;
+                                    let displayValue: string;
+                                    if (Array.isArray(value)) {
+                                        displayValue = value.join(', ');
+                                    } else if (value !== null && typeof value === 'object') {
+                                        const inner = Object.values(value as Record<string, unknown>).filter(v => typeof v === 'string' || typeof v === 'number');
+                                        displayValue = inner.length > 0 ? inner.join(', ') : '';
+                                    } else {
+                                        displayValue = value == null ? '' : String(value);
+                                    }
+                                    if (!displayValue || displayValue === '0' || displayValue === 'null' || displayValue === 'undefined') return null;
                                     return (
                                         <div key={key} className="bg-yellow-100 text-yellow-800 text-xs font-semibold px-3 py-1.5 rounded-full">
                                             <span className="capitalize font-normal mr-1">{key.replace(/_/g, ' ')}:</span>

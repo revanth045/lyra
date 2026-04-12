@@ -67,20 +67,34 @@ export const UserProfile: React.FC<UserProfileProps> = ({ setView }) => {
     }
   };
 
+  // Safe primitive coercion helper — handles AI returning objects/arrays instead of strings
+  const toProfileStr = (v: unknown): string => {
+    if (typeof v === 'string') return v;
+    if (Array.isArray(v)) return (v as unknown[]).map(String).join(', ');
+    if (v !== null && typeof v === 'object') {
+      const vals = Object.values(v as Record<string, unknown>).filter(x => typeof x === 'string' || typeof x === 'number');
+      return vals.map(String).join(', ');
+    }
+    return v == null ? '' : String(v);
+  };
+
   // DNA Calculation Engine
   const dnaStats = useMemo(() => {
     if (!profile) return null;
     const p = profile.profile;
     
     // Adventurous: 20% base + 15% per cuisine (max 100)
-    const adventurous = Math.min(20 + (p.cuisines?.length || 0) * 15, 100);
+    const cuisineArr = Array.isArray(p.cuisines) ? p.cuisines : [];
+    const adventurous = Math.min(20 + cuisineArr.length * 15, 100);
     
-    // Health: 100 if diet is healthy/vegan, else 50
-    const health = (p.diet?.toLowerCase().includes('vegan') || p.diet?.toLowerCase().includes('veg')) ? 95 : 60;
+    // Health: based on diet string
+    const dietStr = toProfileStr(p.diet).toLowerCase();
+    const health = (dietStr.includes('vegan') || dietStr.includes('veg')) ? 95 : 60;
     
     // Fine Dining: based on budget
     const budgetScores: Record<string, number> = { '$': 20, '$$': 50, '$$$': 85, '$$$$': 100 };
-    const fineDining = budgetScores[p.budget] || 50;
+    const budgetStr = toProfileStr(p.budget);
+    const fineDining = budgetScores[budgetStr] || 50;
 
     // Spice: directly from the number
     const spice = typeof p.spice === 'number' ? p.spice * 20 : 50;
@@ -126,15 +140,15 @@ export const UserProfile: React.FC<UserProfileProps> = ({ setView }) => {
       {/* Profile Header */}
       <div className="bg-white p-8 rounded-[2.5rem] border border-cream-200 shadow-sm flex flex-col md:flex-row items-start gap-8 relative overflow-hidden">
         <div className="w-24 h-24 bg-cream-100 rounded-[2rem] flex items-center justify-center text-white text-4xl font-lora font-bold border-4 border-cream-200 shadow-2xl flex-shrink-0 relative z-10">
-          {profile.profile.name?.charAt(0) || 'U'}
+          {toProfileStr(profile.profile.name).charAt(0) || 'U'}
         </div>
         <div className="flex-1 relative z-10 w-full">
           <div className="flex justify-between items-start flex-wrap gap-4">
             <div>
-              <h1 className="font-lora text-3xl text-stone-800 font-bold">{profile.profile.name}</h1>
+              <h1 className="font-lora text-3xl text-stone-800 font-bold">{toProfileStr(profile.profile.name)}</h1>
               <p className="text-stone-400 font-medium flex items-center gap-1.5 mt-1">
                   <Icon name="location_on" size={14} />
-                  {profile.profile.city || 'Location unset'}
+                  {toProfileStr(profile.profile.city) || 'Location unset'}
               </p>
             </div>
             <button 
@@ -148,7 +162,7 @@ export const UserProfile: React.FC<UserProfileProps> = ({ setView }) => {
           <div className="flex flex-wrap gap-3 mt-8">
             <div className="px-4 py-2 bg-cream-50 rounded-xl border border-cream-200/50">
               <span className="block text-[9px] font-bold text-stone-400 uppercase tracking-[0.2em] mb-0.5">Dietary</span>
-              <span className="font-bold text-stone-800 text-xs">{profile.profile.diet !== 'None' ? profile.profile.diet : 'No Restrictions'}</span>
+              <span className="font-bold text-stone-800 text-xs">{(() => { const d = toProfileStr(profile.profile.diet); return d && d !== 'None' ? d : 'No Restrictions'; })()}</span>
             </div>
             <div className="px-4 py-2 bg-white rounded-xl border border-cream-200/50">
               <span className="block text-[9px] font-bold text-stone-400 uppercase tracking-[0.2em] mb-0.5">Liora Level</span>
