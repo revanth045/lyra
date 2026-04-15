@@ -41,6 +41,9 @@ export const AiWaiter = () => {
     const [specials, setSpecials] = useState<DemoMenuItem[]>([]);
     const [cartQty, setCartQty] = useState<Record<string, number>>({});
     const [orderSuccess, setOrderSuccess] = useState(false);
+    const [showDietaryInput, setShowDietaryInput] = useState(false);
+    const [dietaryQuestion, setDietaryQuestion] = useState('');
+    const [dietaryError, setDietaryError] = useState(false);
     const [qrError, setQrError] = useState('');
 
     const cartCount = Object.values(cartQty).reduce((sum, q) => sum + q, 0);
@@ -211,6 +214,12 @@ export const AiWaiter = () => {
             setShowSpecials(true);
             return;
         }
+        if (action === 'Dietary Question') {
+            setDietaryQuestion('');
+            setDietaryError(false);
+            setShowDietaryInput(true);
+            return;
+        }
         const config = QUICK_ACTION_CONFIG[action];
         if (!config) { handleSendMessage(action); return; }
 
@@ -226,6 +235,28 @@ export const AiWaiter = () => {
             author: MessageAuthor.SYSTEM,
             text: `${config.icon} ${config.confirmation}`,
         }]);
+    };
+
+    const handleSubmitDietaryQuestion = () => {
+        if (!dietaryQuestion.trim()) {
+            setDietaryError(true);
+            return;
+        }
+        const config = QUICK_ACTION_CONFIG['Dietary Question'];
+        db_addTableAlert({
+            restaurantName: session.restaurantName,
+            tableNumber: String(session.tableNumber),
+            action: 'Dietary Question',
+            message: `Table ${session.tableNumber} dietary question: "${dietaryQuestion.trim()}"`,
+        });
+        setMessages(prev => [...prev, {
+            id: uid(),
+            author: MessageAuthor.SYSTEM,
+            text: `${config.icon} Your question has been sent to the kitchen: "${dietaryQuestion.trim()}"`,
+        }]);
+        setShowDietaryInput(false);
+        setDietaryQuestion('');
+        setDietaryError(false);
     };
 
     const adjustCart = (itemId: string, delta: number) => {
@@ -483,6 +514,50 @@ export const AiWaiter = () => {
                                 className="w-full py-3 bg-brand-400 text-white font-bold rounded-2xl shadow-md hover:bg-amber-500 transition-all"
                             >
                                 Close
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* Dietary Question Modal */}
+            {showDietaryInput && (
+                <div className="absolute inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-end justify-center">
+                    <div className="bg-white w-full rounded-t-3xl shadow-2xl p-6 space-y-4">
+                        <div className="flex items-center justify-between">
+                            <div className="flex items-center gap-3">
+                                <div className="w-10 h-10 bg-green-50 rounded-xl flex items-center justify-center text-xl">🥗</div>
+                                <div>
+                                    <h3 className="font-lora font-bold text-lg text-stone-800">Dietary Question</h3>
+                                    <p className="text-stone-400 text-xs">We'll send this straight to the kitchen</p>
+                                </div>
+                            </div>
+                            <button onClick={() => setShowDietaryInput(false)} className="text-stone-400 hover:text-stone-600 p-1">
+                                <Icon name="close" size={20} />
+                            </button>
+                        </div>
+                        <textarea
+                            autoFocus
+                            value={dietaryQuestion}
+                            onChange={e => { setDietaryQuestion(e.target.value); setDietaryError(false); }}
+                            onKeyDown={e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleSubmitDietaryQuestion(); } }}
+                            placeholder="e.g. Does the risotto contain nuts? Is the pasta gluten-free?"
+                            rows={3}
+                            className={`w-full border-2 rounded-2xl p-4 text-sm text-stone-800 placeholder-stone-300 resize-none outline-none transition-all ${dietaryError ? 'border-red-400 bg-red-50' : 'border-cream-200 focus:border-brand-400'}`}
+                        />
+                        {dietaryError && (
+                            <p className="text-red-500 text-xs font-bold -mt-2 px-1">Please enter your question before sending.</p>
+                        )}
+                        <div className="flex gap-3">
+                            <button
+                                onClick={() => setShowDietaryInput(false)}
+                                className="flex-1 py-3 bg-cream-50 text-stone-600 font-bold rounded-2xl border border-cream-200 hover:bg-cream-200/60 transition-all text-sm"
+                            >Cancel</button>
+                            <button
+                                onClick={handleSubmitDietaryQuestion}
+                                className="flex-1 py-3 bg-brand-400 text-white font-bold rounded-2xl shadow-md hover:bg-amber-500 transition-all text-sm flex items-center justify-center gap-2"
+                            >
+                                <Icon name="send" size={16} /> Send to Kitchen
                             </button>
                         </div>
                     </div>
