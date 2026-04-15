@@ -1,0 +1,48 @@
+
+> copy-of-liora----expanding-liora@0.0.0 dev
+> concurrently -n client,server -c cyan,green "vite" "node --env-file=.env server/index.js"
+
+[1G[0K[32m[server][39m 🍽️  Liora API server running on http://localhost:3001
+[32m[server][39m    Health: http://localhost:3001/api/health
+[36m[client][39m 
+[36m[client][39m   [32m[1mVITE[22m v6.4.1[39m  [2mready in [0m[1m171[22m[2m[0m ms[22m
+[36m[client][39m 
+[36m[client][39m   [32m➜[39m  [1mLocal[22m:   [36mhttp://localhost:[1m5000[22m/[39m
+[36m[client][39m   [32m➜[39m  [1mNetwork[22m: [36mhttp://172.31.69.98:[1m5000[22m/[39m
+[32m[server][39m Both GOOGLE_API_KEY and GEMINI_API_KEY are set. Using GOOGLE_API_KEY.
+[32m[server][39m Both GOOGLE_API_KEY and GEMINI_API_KEY are set. Using GOOGLE_API_KEY.
+[32m[server][39m Both GOOGLE_API_KEY and GEMINI_API_KEY are set. Using GOOGLE_API_KEY.
+[32m[server][39m AI Waiter Error: ApiError: {"error":{"code":503,"message":"This model is currently experiencing high demand. Spikes in demand are usually temporary. Please try again later.","status":"UNAVAILABLE"}}
+[32m[server][39m     at throwErrorIfNotOK [90m(file:///home/runner/workspace/liora-main/[39mnode_modules/[4m@google/genai[24m/dist/node/index.mjs:13063:30[90m)[39m
+[32m[server][39m [90m    at process.processTicksAndRejections (node:internal/process/task_queues:95:5)[39m
+[32m[server][39m     at async [90mfile:///home/runner/workspace/liora-main/[39mnode_modules/[4m@google/genai[24m/dist/node/index.mjs:12766:13
+[32m[server][39m     at async Models.generateContent [90m(file:///home/runner/workspace/liora-main/[39mnode_modules/[4m@google/genai[24m/dist/node/index.mjs:14167:24[90m)[39m
+[32m[server][39m     at async chatWithHistory [90m(file:///home/runner/workspace/liora-main/[39mserver/routes/aiWaiter.js:37:24[90m)[39m
+[32m[server][39m     at async [90mfile:///home/runner/workspace/liora-main/[39mserver/routes/aiWaiter.js:166:26 {
+[32m[server][39m   status: [33m503[39m
+[32m[server][39m }
+[36m[client][39m [2m6:01:37 AM[22m [36m[1m[vite][22m[39m [32m.env changed, restarting server...[39m
+[36m[client][39m [2m6:01:37 AM[22m [36m[1m[vite][22m[39m server restarted.
+[36m[client][39m [2m6:01:40 AM[22m [36m[1m[vite][22m[39m [32m.env changed, restarting server...[39m
+[36m[client][39m [2m6:01:40 AM[22m [36m[1m[vite][22m[39m server restarted.
+[32m[server][39m Both GOOGLE_API_KEY and GEMINI_API_KEY are set. Using GOOGLE_API_KEY.
+[32m[server][39m AI Waiter Error: ApiError: {"error":{"code":503,"message":"This model is currently experiencing high demand. Spikes in demand are usually temporary. Please try again later.","status":"UNAVAILABLE"}}
+[32m[server][39m     at throwErrorIfNotOK [90m(file:///home/runner/workspace/liora-main/[39mnode_modules/[4m@google/genai[24m/dist/node/index.mjs:13063:30[90m)[39m
+[32m[server][39m [90m    at process.processTicksAndRejections (node:internal/process/task_queues:95:5)[39m
+[32m[server][39m     at async [90mfile:///home/runner/workspace/liora-main/[39mnode_modules/[4m@google/genai[24m/dist/node/index.mjs:12766:13
+[32m[server][39m     at async Models.generateContent [90m(file:///home/runner/workspace/liora-main/[39mnode_modules/[4m@google/genai[24m/dist/node/index.mjs:14167:24[90m)[39m
+[32m[server][39m     at async chatWithHistory [90m(file:///home/runner/workspace/liora-main/[39mserver/routes/aiWaiter.js:37:24[90m)[39m
+[32m[server][39m     at async [90mfile:///home/runner/workspace/liora-main/[39mserver/routes/aiWaiter.js:166:26 {
+[32m[server][39m   status: [33m503[39m
+[32m[server][39m }
+[36m[client][39m [2m6:02:00 AM[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mhmr update [39m[2m/src/portals/restaurant/RestaurantPortal.tsx, /src/portals/restaurant/ServiceDeskPortal.tsx, /src/portals/restaurant/Overview.tsx, /src/portals/restaurant/KPIs.tsx, /src/portals/restaurant/MenuStudio.tsx, /src/portals/restaurant/Inventory.tsx, /src/portals/restaurant/Staff.tsx, /src/portals/restaurant/VenueSettings.tsx, /src/portals/restaurant/pages/CustomerInsights.tsx, /src/portals/restaurant/pages/Promotions.tsx, /src/portals/restaurant/pages/Tables.tsx, /src/portals/restaurant/pages/ChefSpecials.tsx, /src/portals/restaurant/pages/Orders.tsx, /src/portals/user/pages/Home.tsx[22m
+[36m[client][39m [2m6:02:22 AM[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mhmr update [39m[2m/components/AiWaiter.tsx[22m
+[36m[client][39m [2m6:02:30 AM[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mhmr update [39m[2m/components/AiWaiter.tsx[22m
+[36m[client][39m [2m6:02:44 AM[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mhmr update [39m[2m/components/AiWaiter.tsx[22m
+[36m[client][39m [2m6:02:55 AM[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mhmr update [39m[2m/components/AiWaiter.tsx[22m
+[36m[client][39m [2m6:03:15 AM[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mhmr update [39m[2m/components/AiWaiter.tsx[22m
+[36m[client][39m [2m6:03:31 AM[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mhmr update [39m[2m/src/portals/restaurant/pages/Orders.tsx[22m
+[36m[client][39m [2m6:03:43 AM[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mhmr update [39m[2m/src/portals/restaurant/pages/Orders.tsx[22m
+[36m[client][39m [2m6:03:58 AM[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mhmr update [39m[2m/src/portals/restaurant/pages/Orders.tsx[22m
+[32m[server][39m [0mnode --env-file=.env server/index.js exited with code SIGHUP[0m
+[36m[client][39m [0mvite exited with code SIGHUP[0m
