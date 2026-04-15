@@ -259,7 +259,7 @@ export default function UserShell() {
             case 'restaurants':
                 return (
                     <SimplePageWrapper>
-                        <RestaurantsPage />
+                        <RestaurantsPage setView={setView} />
                     </SimplePageWrapper>
                 );
             default:

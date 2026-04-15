@@ -235,12 +235,14 @@ function RestaurantPage({
     autoNote,
     customerName,
     customerEmail,
+    onDineIn,
 }: {
     r: Restaurant;
     onBack: () => void;
     autoNote: string;
     customerName: string;
     customerEmail?: string;
+    onDineIn?: () => void;
 }) {
     const [menuItems, setMenuItems] = React.useState<DemoMenuItem[]>([]);
     const [specials, setSpecials] = React.useState<DemoChefSpecial[]>([]);
@@ -463,10 +465,29 @@ function RestaurantPage({
                             <Icon name="clock" className="w-3.5 h-3.5 text-[#f5c842]" /> {r.hours}
                         </span>
                     )}
-                    {r.features.slice(0, 3).map(f => (
+                    {r.features.filter(f => f !== 'Dine-in').slice(0, 3).map(f => (
                         <span key={f} className="flex items-center gap-1 px-2 py-0.5 rounded-full bg-white/5 text-white/40 text-[10px] border border-white/8">{f}</span>
                     ))}
                 </div>
+
+                {/* Prominent Dine-In CTA */}
+                {r.features.includes('Dine-in') && onDineIn && (
+                    <button
+                        onClick={onDineIn}
+                        className="mt-6 w-full flex items-center justify-between gap-3 px-6 py-4 rounded-2xl bg-[#f5c842] hover:bg-yellow-300 active:scale-[0.98] transition-all shadow-lg shadow-[#f5c842]/20 group"
+                    >
+                        <div className="flex items-center gap-3">
+                            <div className="w-10 h-10 rounded-xl bg-black/10 flex items-center justify-center flex-shrink-0">
+                                <Icon name="qr_code_scanner" className="w-5 h-5 text-black" />
+                            </div>
+                            <div className="text-left">
+                                <p className="font-bold text-black text-sm leading-tight">Dine In Now</p>
+                                <p className="text-black/60 text-xs mt-0.5">Scan QR &amp; order with your AI waiter</p>
+                            </div>
+                        </div>
+                        <Icon name="chevron-right" className="w-5 h-5 text-black/50 group-hover:translate-x-0.5 transition-transform" />
+                    </button>
+                )}
             </div>
 
             {/* Sticky category nav */}
@@ -967,11 +988,16 @@ function RestaurantCard({ r, onClick }: { r: Restaurant; onClick: () => void }) 
                         <p className="text-xs text-stone-500 mt-2 line-clamp-2 leading-relaxed">{r.description}</p>
                     )}
                     <div className="flex flex-wrap gap-1.5 mt-2.5">
-                        {topFeatures.map(f => (
-                            <span key={f} className="text-[10px] px-2 py-0.5 rounded-full bg-cream-100 text-stone-500 font-medium">{f}</span>
+                        {r.features.includes('Dine-in') && (
+                            <span className="inline-flex items-center gap-1 text-[10px] px-2.5 py-1 rounded-full bg-[#f5c842]/15 text-[#8a6f00] font-bold border border-[#f5c842]/40">
+                                <Icon name="restaurant_menu" className="w-3 h-3" /> Dine-in
+                            </span>
+                        )}
+                        {topFeatures.filter(f => f !== 'Dine-in').map(f => (
+                            <span key={f} className="text-[10px] px-2 py-0.5 rounded-full bg-cream-100/60 text-stone-400 font-medium">{f}</span>
                         ))}
-                        {r.features.length > 4 && (
-                            <span className="text-[10px] px-2 py-0.5 rounded-full bg-brand-400/10 text-brand-400 font-medium">+{r.features.length - 4} more</span>
+                        {r.features.filter(f => f !== 'Dine-in').length > 3 && (
+                            <span className="text-[10px] px-2 py-0.5 rounded-full bg-brand-400/10 text-brand-400 font-medium">+{r.features.filter(f => f !== 'Dine-in').length - 3} more</span>
                         )}
                     </div>
                 </div>
@@ -982,7 +1008,7 @@ function RestaurantCard({ r, onClick }: { r: Restaurant; onClick: () => void }) 
 }
 
 // ─── Main Page ────────────────────────────────────────────────────────────────
-export default function RestaurantsPage() {
+export default function RestaurantsPage({ setView }: { setView?: (v: string) => void }) {
     const [all, setAll] = useState<Restaurant[]>([]);
     const [zipQuery, setZipQuery] = useState('');
     const [cuisineFilter, setCuisineFilter] = useState('All');
@@ -1035,6 +1061,7 @@ export default function RestaurantsPage() {
                 autoNote={autoNote}
                 customerName={session?.user?.name ?? session?.user?.email ?? 'Guest'}
                 customerEmail={session?.user?.email}
+                onDineIn={setView ? () => setView('ai_waiter') : undefined}
             />
         );
     }
