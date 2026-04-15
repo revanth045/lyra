@@ -13,6 +13,9 @@ import aiWaiterRouter from './routes/aiWaiter.js';
 const app = express();
 const PORT = process.env.PORT || 3001;
 
+// Trust Replit's proxy so rate-limit can read the real client IP
+app.set('trust proxy', 1);
+
 // ── Security middleware ────────────────────────────────────────────────────
 app.use(helmet({ contentSecurityPolicy: false }));
 app.use(cors({ origin: true, credentials: true }));

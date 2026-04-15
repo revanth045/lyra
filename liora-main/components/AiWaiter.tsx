@@ -4,7 +4,6 @@ import { Spinner } from './Spinner';
 import { useDining } from '../src/context/DiningContext';
 import { ChatMessage, MessageAuthor } from '../types';
 import { uid } from '../utils/uid';
-import { chatWithHistory } from '../services/geminiService';
 import {
   requestAssistance,
   getSessionData,
@@ -184,13 +183,24 @@ export const AiWaiter = () => {
                 content: m.text
             }));
 
-            const response = await chatWithHistory({
+            const response = await chatWithAiWaiter(
+                text,
                 history,
-                user: `CONTEXT: Table ${session.tableNumber} at ${session.restaurantName}. User says: ${text}`,
-                location: undefined // Session context is enough
-            });
+                { restaurantName: session.restaurantName, tableNumber: String(session.tableNumber) }
+            );
 
-            setMessages(prev => [...prev, response]);
+            const authorMap: Record<string, MessageAuthor> = {
+                'LIORA': MessageAuthor.LIORA,
+                'liora': MessageAuthor.LIORA,
+                'SYSTEM': MessageAuthor.SYSTEM,
+                'system': MessageAuthor.SYSTEM,
+            };
+
+            setMessages(prev => [...prev, {
+                id: response.id || uid(),
+                author: authorMap[response.author] || MessageAuthor.LIORA,
+                text: response.text
+            }]);
         } catch (e) {
             setMessages(prev => [...prev, { id: uid(), author: MessageAuthor.SYSTEM, text: "I'm having trouble connecting to the kitchen. Please try again." }]);
         } finally {
