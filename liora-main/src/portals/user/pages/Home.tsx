@@ -7,7 +7,7 @@ import {
     type DemoRestaurant, type DemoOrder, type DemoPromotion,
 } from '../../../demoDb';
 import { Icon } from '../../../../components/Icon';
-import imgAiChef from '@assets/Happy_robot_chef_in_action_1776233731026.png';
+import imgAiChef from '@assets/Happy_robot_chef_in_action_1776234347274.png';
 import imgOffers from '@assets/offers_1776233841155.png';
 import imgNearby from '@assets/Nearby_1776233850952.png';
 import imgCalorie from '@assets/calorie_1776233856996.png';
@@ -32,12 +32,12 @@ function timeGreeting() {
 
 function fmt(cents: number) { return `$${(cents / 100).toFixed(2)}`; }
 
-const QUICK_ACTIONS: { img: string; label: string; view: View; large?: boolean }[] = [
+const QUICK_ACTIONS: { img: string; label: string; view: View }[] = [
     { img: imgRestaurants, label: 'Restaurants', view: 'restaurants' },
     { img: imgOrders,      label: 'My Orders',   view: 'orders'      },
     { img: imgAiChat,      label: 'AI Chat',     view: 'ai_chat'     },
     { img: imgAiWaiter,    label: 'AI Waiter',   view: 'ai_waiter'   },
-    { img: imgAiChef,      label: 'AI Chef',     view: 'chef_mode',  large: true },
+    { img: imgAiChef,      label: 'AI Chef',     view: 'chef_mode'   },
     { img: imgCalorie,     label: 'Calorie Log', view: 'calorie_log' },
     { img: imgNearby,      label: 'Nearby',      view: 'nearby'      },
     { img: imgOffers,      label: 'Deals',       view: 'offers'      },
@@ -145,8 +145,8 @@ export default function HomePage({ setView }: HomeProps) {
                                 onClick={() => setView(action.view)}
                                 className="flex flex-col items-center gap-2 py-3 px-1 bg-white rounded-2xl border border-cream-200 shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all active:scale-95"
                             >
-                                <div className={`flex items-center justify-center ${action.large ? 'w-16 h-16' : 'w-12 h-12'}`}>
-                                    <img src={action.img} alt={action.label} className={`object-contain ${action.large ? 'w-16 h-16' : 'w-12 h-12'}`} />
+                                <div className="w-12 h-12 flex items-center justify-center">
+                                    <img src={action.img} alt={action.label} className="w-12 h-12 object-contain" />
                                 </div>
                                 <span className="text-[10px] font-bold text-stone-600 text-center leading-tight">{action.label}</span>
                             </button>
