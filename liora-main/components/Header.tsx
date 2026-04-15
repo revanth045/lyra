@@ -52,7 +52,7 @@ export const Header: React.FC<HeaderProps> = ({ setView, onMenuClick, canGoBack 
   };
 
   return (
-    <header className="bg-forest-900 px-4 py-3 flex justify-between items-center sticky top-0 z-10 border-b border-white/10 gap-3 shadow-md">
+    <header className="bg-forest-900 px-4 py-3 flex justify-between items-center sticky top-0 z-40 border-b border-white/10 gap-3 shadow-md">
         {/* LEFT — hamburger / back + logo + name */}
         <div className="flex items-center gap-2 flex-shrink-0">
             {/* Hamburger — mobile only (sidebar is always visible on desktop) */}
