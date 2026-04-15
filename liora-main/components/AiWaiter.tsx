@@ -187,15 +187,24 @@ export const AiWaiter = () => {
         }
     };
 
-    // Load specials (available menu items) when session becomes active
-    useEffect(() => {
-        if (!session.isActive) return;
+    const loadMenuItems = () => {
+        if (!session.isActive || !session.restaurantName) return;
         const restaurant = db_getRestaurantByName(session.restaurantName);
         const restaurantId = restaurant?.id ?? session.restaurantName;
         db_seedMenuIfEmpty(restaurantId);
         const items = db_listMenu(restaurantId).filter(i => i.available);
         setSpecials(items);
+    };
+
+    // Load specials when session becomes active
+    useEffect(() => {
+        loadMenuItems();
     }, [session.isActive, session.restaurantName]);
+
+    // Reload every time the menu modal opens (ensures fresh data after HMR / first open)
+    useEffect(() => {
+        if (showMenu) loadMenuItems();
+    }, [showMenu]);
 
     const QUICK_ACTION_CONFIG: Record<string, { icon: string; alertMessage: string; confirmation: string }> = {
         'Call Waiter':    { icon: '🛎️', alertMessage: `Table ${session.tableNumber} is calling for a waiter`, confirmation: "A waiter has been notified and will be with you shortly!" },
