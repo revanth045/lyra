@@ -126,7 +126,7 @@ export const UserProfile: React.FC<UserProfileProps> = ({ setView }) => {
               <p className="text-stone-400">Complete your onboarding to unlock your personalized Dining DNA and AI insights.</p>
               <button 
                 onClick={() => setView('account')} 
-                className="px-8 py-3 bg-cream-100 text-white rounded-xl font-bold shadow-lg"
+                className="px-8 py-3 bg-stone-800 text-white rounded-xl font-bold shadow-lg hover:bg-stone-700 transition-all"
               >
                   Create Profile
               </button>
@@ -139,7 +139,7 @@ export const UserProfile: React.FC<UserProfileProps> = ({ setView }) => {
       
       {/* Profile Header */}
       <div className="bg-white p-8 rounded-[2.5rem] border border-cream-200 shadow-sm flex flex-col md:flex-row items-start gap-8 relative overflow-hidden">
-        <div className="w-24 h-24 bg-cream-100 rounded-[2rem] flex items-center justify-center text-white text-4xl font-lora font-bold border-4 border-cream-200 shadow-2xl flex-shrink-0 relative z-10">
+        <div className="w-24 h-24 bg-gradient-to-br from-brand-400 to-amber-600 rounded-[2rem] flex items-center justify-center text-white text-4xl font-lora font-bold border-4 border-amber-200 shadow-2xl flex-shrink-0 relative z-10">
           {toProfileStr(profile.profile.name).charAt(0) || 'U'}
         </div>
         <div className="flex-1 relative z-10 w-full">
@@ -168,9 +168,9 @@ export const UserProfile: React.FC<UserProfileProps> = ({ setView }) => {
               <span className="block text-[9px] font-bold text-stone-400 uppercase tracking-[0.2em] mb-0.5">Liora Level</span>
               <span className="font-bold text-brand-400 text-xs">Epicurean {isPremium ? 'Gold' : 'Basic'}</span>
             </div>
-             <div className="px-4 py-2 bg-cream-100 rounded-xl shadow-lg border border-cream-200">
+             <div className="px-4 py-2 bg-stone-800 rounded-xl shadow-lg border border-stone-700">
               <span className="block text-[9px] font-bold text-white/50 uppercase tracking-[0.2em] mb-0.5">Experience Points</span>
-              <span className="font-bold text-white text-xs">1,240 XP</span>
+              <span className="font-bold text-brand-400 text-xs">1,240 XP</span>
             </div>
           </div>
         </div>
@@ -310,7 +310,7 @@ export const UserProfile: React.FC<UserProfileProps> = ({ setView }) => {
         {/* TAB 3: PAYMENTS */}
         {activeTab === 'payments' && (
             <div className="space-y-6 animate-page-slide">
-                <div className="bg-gradient-to-br from-[#18181b] to-cream-100 p-8 rounded-[2rem] text-white shadow-2xl relative overflow-hidden">
+                <div className="bg-gradient-to-br from-[#18181b] to-[#2d3a2e] p-8 rounded-[2rem] text-white shadow-2xl relative overflow-hidden">
                     <div className="relative z-10">
                         <p className="text-white/40 text-[10px] font-bold uppercase tracking-[0.3em] mb-6">Liora Pay Balance</p>
                         <h2 className="text-5xl font-lora font-bold mb-10">$140.50</h2>
