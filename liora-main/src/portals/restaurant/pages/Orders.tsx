@@ -2,7 +2,8 @@ import React, { useEffect, useState } from 'react';
 import { Icon } from '../../../../components/Icon';
 import {
   db_listOrders, db_updateOrderStatus,
-  type DemoOrder, type DemoOrderStatus,
+  db_listTableAlerts, db_dismissTableAlert,
+  type DemoOrder, type DemoOrderStatus, type DemoTableAlert,
 } from '../../../demoDb';
 import type { DemoRestaurant } from '../../../demoDb';
 
@@ -27,13 +28,23 @@ function timeAgo(ts: number) {
   return `${Math.floor(m/60)}h ago`;
 }
 
+const ALERT_CONFIG: Record<string, { icon: string; color: string; bg: string; border: string }> = {
+  'Call Waiter':      { icon: '🛎️', color: 'text-amber-700',  bg: 'bg-amber-50',  border: 'border-amber-300' },
+  'Order Drinks':     { icon: '🍷', color: 'text-purple-700', bg: 'bg-purple-50', border: 'border-purple-300' },
+  'Request Bill':     { icon: '🧾', color: 'text-blue-700',   bg: 'bg-blue-50',   border: 'border-blue-300' },
+  'Dietary Question': { icon: '🥗', color: 'text-green-700',  bg: 'bg-green-50',  border: 'border-green-300' },
+  'Get Manager':      { icon: '👔', color: 'text-red-700',    bg: 'bg-red-50',    border: 'border-red-300' },
+};
+
 export default function RestoOrders({ restaurant }: { restaurant: DemoRestaurant }) {
   const [orders, setOrders] = useState<DemoOrder[]>([]);
+  const [alerts, setAlerts] = useState<DemoTableAlert[]>([]);
   const [filter, setFilter] = useState<FilterTab>('all');
   const [expanded, setExpanded] = useState<string | null>(null);
 
   const reload = () => {
     setOrders(db_listOrders(restaurant.id).sort((a,b) => b.createdAt - a.createdAt));
+    setAlerts(db_listTableAlerts(restaurant.name).sort((a, b) => b.createdAt - a.createdAt));
   };
 
   useEffect(() => {
@@ -41,7 +52,17 @@ export default function RestoOrders({ restaurant }: { restaurant: DemoRestaurant
     // Auto-poll every 5 s so new customer orders appear without manual refresh
     const timer = setInterval(reload, 5000);
     return () => clearInterval(timer);
-  }, [restaurant.id]);
+  }, [restaurant.id, restaurant.name]);
+
+  const dismiss = (id: string) => {
+    db_dismissTableAlert(id);
+    setAlerts(prev => prev.filter(a => a.id !== id));
+  };
+
+  const dismissAll = () => {
+    alerts.forEach(a => db_dismissTableAlert(a.id));
+    setAlerts([]);
+  };
 
   const advance = (order: DemoOrder) => {
     const idx = STATUS_FLOW.indexOf(order.status);
@@ -86,6 +107,51 @@ export default function RestoOrders({ restaurant }: { restaurant: DemoRestaurant
           </div>
         ))}
       </div>
+
+      {/* Table Request Alerts */}
+      {alerts.length > 0 && (
+        <div className="bg-white rounded-3xl border-2 border-amber-300 shadow-sm overflow-hidden">
+          <div className="flex items-center justify-between px-5 py-3 bg-amber-50 border-b border-amber-200">
+            <div className="flex items-center gap-2">
+              <span className="w-2.5 h-2.5 rounded-full bg-amber-400 animate-pulse" />
+              <span className="font-bold text-amber-800 text-sm">Table Requests</span>
+              <span className="bg-amber-400 text-white text-[10px] font-bold px-2 py-0.5 rounded-full">{alerts.length}</span>
+            </div>
+            <button onClick={dismissAll} className="text-xs font-bold text-amber-600 hover:text-amber-800 transition-colors">
+              Dismiss All
+            </button>
+          </div>
+          <div className="divide-y divide-amber-100">
+            {alerts.map(alert => {
+              const cfg = ALERT_CONFIG[alert.action] ?? { icon: '📣', color: 'text-stone-700', bg: 'bg-stone-50', border: 'border-stone-200' };
+              return (
+                <div key={alert.id} className={`flex items-center gap-4 px-5 py-3.5 ${cfg.bg} hover:brightness-95 transition-all`}>
+                  <span className="text-xl flex-shrink-0">{cfg.icon}</span>
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <span className={`text-[10px] font-bold uppercase tracking-wider px-2.5 py-0.5 rounded-full border ${cfg.bg} ${cfg.color} ${cfg.border}`}>
+                        Table {alert.tableNumber}
+                      </span>
+                      <span className={`font-bold text-sm ${cfg.color}`}>{alert.action}</span>
+                    </div>
+                    <p className="text-xs text-stone-500 mt-0.5">{alert.message}</p>
+                  </div>
+                  <div className="flex items-center gap-3 flex-shrink-0">
+                    <span className="text-[10px] text-stone-400 font-medium">{timeAgo(alert.createdAt)}</span>
+                    <button
+                      onClick={() => dismiss(alert.id)}
+                      className="w-7 h-7 rounded-full bg-white border border-stone-200 text-stone-400 hover:text-stone-700 hover:border-stone-400 flex items-center justify-center transition-all shadow-sm"
+                      title="Dismiss"
+                    >
+                      <Icon name="close" size={14} />
+                    </button>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      )}
 
       {/* Filter tabs */}
       <div className="flex gap-2 flex-wrap">

@@ -477,6 +477,45 @@ export function db_getRestaurantById(id: string): DemoRestaurant | null {
   return read<DemoRestaurant[]>(RKEY, []).find(r => r.id === id) ?? null;
 }
 
+// ─────────────────────────────────────────
+// TABLE ALERTS (Quick-action notifications from diners)
+// ─────────────────────────────────────────
+const ALERTS_KEY = 'liora_demo_table_alerts';
+
+export type DemoTableAlert = {
+  id: string;
+  restaurantName: string;
+  tableNumber: string;
+  action: string;
+  message: string;
+  status: 'active' | 'dismissed';
+  createdAt: number;
+};
+
+export function db_addTableAlert(alert: Omit<DemoTableAlert, 'id' | 'createdAt' | 'status'>): DemoTableAlert {
+  const all = read<DemoTableAlert[]>(ALERTS_KEY, []);
+  const a: DemoTableAlert = { ...alert, id: uid(), status: 'active', createdAt: Date.now() };
+  all.push(a);
+  write(ALERTS_KEY, all);
+  return a;
+}
+
+export function db_listTableAlerts(restaurantName: string): DemoTableAlert[] {
+  return read<DemoTableAlert[]>(ALERTS_KEY, []).filter(
+    a => a.restaurantName.toLowerCase() === restaurantName.toLowerCase() && a.status === 'active'
+  );
+}
+
+export function db_dismissTableAlert(id: string) {
+  const all = read<DemoTableAlert[]>(ALERTS_KEY, []);
+  const i = all.findIndex(a => a.id === id);
+  if (i >= 0) { all[i].status = 'dismissed'; write(ALERTS_KEY, all); }
+}
+
+export function db_getRestaurantByName(name: string): DemoRestaurant | undefined {
+  return read<DemoRestaurant[]>(RKEY, []).find(r => r.name.toLowerCase() === name.toLowerCase());
+}
+
 /** Returns or auto-generates a staff access code for the given restaurant. */
 export function db_getOrCreateStaffCode(restaurantId: string): string {
   const all = read<DemoRestaurant[]>(RKEY, []);

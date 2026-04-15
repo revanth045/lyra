@@ -10,6 +10,12 @@ import {
   chatWithAiWaiter,
   OrderItem
 } from '../services/aiWaiterService';
+import {
+  db_addTableAlert,
+  db_getRestaurantByName,
+  db_listMenu,
+  type DemoMenuItem
+} from '../src/demoDb';
 import { BillSplitter } from './BillSplitter';
 import jsQR from 'jsqr';
 
@@ -27,6 +33,8 @@ export const AiWaiter = () => {
     const [isLoading, setIsLoading] = useState(false);
     const [showSplitter, setShowSplitter] = useState(false);
     const [showQRScanner, setShowQRScanner] = useState(false);
+    const [showSpecials, setShowSpecials] = useState(false);
+    const [specials, setSpecials] = useState<DemoMenuItem[]>([]);
     const [qrError, setQrError] = useState('');
     const chatContainerRef = useRef<HTMLDivElement>(null);
     const videoRef = useRef<HTMLVideoElement>(null);
@@ -166,6 +174,46 @@ export const AiWaiter = () => {
                 setQrError(`Failed to connect: ${error instanceof Error ? error.message : 'Unknown error'}`);
             }
         }
+    };
+
+    // Load specials (available menu items) when session becomes active
+    useEffect(() => {
+        if (!session.isActive) return;
+        const restaurant = db_getRestaurantByName(session.restaurantName);
+        if (restaurant) {
+            const items = db_listMenu(restaurant.id).filter(i => i.available);
+            setSpecials(items);
+        }
+    }, [session.isActive, session.restaurantName]);
+
+    const QUICK_ACTION_CONFIG: Record<string, { icon: string; alertMessage: string; confirmation: string }> = {
+        'Call Waiter':    { icon: '🛎️', alertMessage: `Table ${session.tableNumber} is calling for a waiter`, confirmation: "A waiter has been notified and will be with you shortly!" },
+        'Order Drinks':   { icon: '🍷', alertMessage: `Table ${session.tableNumber} would like to order drinks`, confirmation: "Your drink order request has been sent! Someone will be right over." },
+        'Request Bill':   { icon: '🧾', alertMessage: `Table ${session.tableNumber} is requesting the bill`, confirmation: "Your bill is being prepared and will be brought to you shortly!" },
+        'Dietary Question': { icon: '🥗', alertMessage: `Table ${session.tableNumber} has a dietary question for the kitchen`, confirmation: "Your question has been forwarded to the kitchen team!" },
+        'Get Manager':    { icon: '👔', alertMessage: `Table ${session.tableNumber} is requesting to speak with the manager`, confirmation: "The manager has been notified and will be with you soon!" },
+    };
+
+    const handleQuickAction = (action: string) => {
+        if (action === 'See Specials') {
+            setShowSpecials(true);
+            return;
+        }
+        const config = QUICK_ACTION_CONFIG[action];
+        if (!config) { handleSendMessage(action); return; }
+
+        db_addTableAlert({
+            restaurantName: session.restaurantName,
+            tableNumber: String(session.tableNumber),
+            action,
+            message: config.alertMessage,
+        });
+
+        setMessages(prev => [...prev, {
+            id: uid(),
+            author: MessageAuthor.SYSTEM,
+            text: `${config.icon} ${config.confirmation}`,
+        }]);
     };
 
     const handleSendMessage = async (textOverride?: string) => {
@@ -319,6 +367,76 @@ export const AiWaiter = () => {
                 </div>
             )}
 
+            {/* Specials Modal Overlay */}
+            {showSpecials && (
+                <div className="absolute inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-end justify-center">
+                    <div className="bg-white w-full max-h-[80%] rounded-t-3xl overflow-hidden flex flex-col shadow-2xl animate-slide-up">
+                        {/* Header */}
+                        <div className="p-5 border-b border-cream-200 flex items-center justify-between bg-gradient-to-r from-brand-400 to-amber-500">
+                            <div>
+                                <h3 className="font-lora font-bold text-xl text-white">Today's Specials</h3>
+                                <p className="text-white/80 text-xs mt-0.5">{session.restaurantName}</p>
+                            </div>
+                            <button onClick={() => setShowSpecials(false)} className="text-white/80 hover:text-white p-1">
+                                <Icon name="close" size={22} />
+                            </button>
+                        </div>
+                        {/* Items */}
+                        <div className="overflow-y-auto p-4 space-y-3">
+                            {specials.length > 0 ? specials.map(item => (
+                                <div key={item.id} className="flex items-center justify-between bg-cream-50 border border-cream-200 rounded-2xl p-4 shadow-sm">
+                                    <div className="flex-1 min-w-0">
+                                        <p className="font-bold text-stone-800 text-sm">{item.name}</p>
+                                        {item.description && <p className="text-stone-400 text-xs mt-0.5 line-clamp-2">{item.description}</p>}
+                                        {item.tags && item.tags.length > 0 && (
+                                            <div className="flex flex-wrap gap-1 mt-1.5">
+                                                {item.tags.map(tag => (
+                                                    <span key={tag} className="text-[10px] font-bold px-2 py-0.5 bg-brand-400/10 text-brand-400 rounded-full uppercase tracking-wide">{tag}</span>
+                                                ))}
+                                            </div>
+                                        )}
+                                    </div>
+                                    <div className="ml-4 text-right flex-shrink-0">
+                                        <p className="font-bold text-brand-400 text-base">${(item.priceCents / 100).toFixed(2)}</p>
+                                    </div>
+                                </div>
+                            )) : (
+                                // Fallback hardcoded specials when no menu items are set up
+                                [
+                                    { name: "Truffle Risotto", desc: "Arborio rice, black truffle, aged parmesan, fresh herbs", price: "$32", tags: ["Chef's Pick", "Vegetarian"] },
+                                    { name: "Pan-Seared Salmon", desc: "Atlantic salmon, lemon beurre blanc, asparagus, capers", price: "$28", tags: ["Fresh Today"] },
+                                    { name: "Slow-Braised Lamb Shank", desc: "7-hour braised, rosemary jus, creamy mash, seasonal greens", price: "$38", tags: ["Signature"] },
+                                    { name: "Tiramisu Classico", desc: "House-made, espresso-soaked ladyfingers, mascarpone cream", price: "$12", tags: ["Dessert"] },
+                                ].map(item => (
+                                    <div key={item.name} className="flex items-center justify-between bg-cream-50 border border-cream-200 rounded-2xl p-4 shadow-sm">
+                                        <div className="flex-1 min-w-0">
+                                            <p className="font-bold text-stone-800 text-sm">{item.name}</p>
+                                            <p className="text-stone-400 text-xs mt-0.5">{item.desc}</p>
+                                            <div className="flex flex-wrap gap-1 mt-1.5">
+                                                {item.tags.map(tag => (
+                                                    <span key={tag} className="text-[10px] font-bold px-2 py-0.5 bg-brand-400/10 text-brand-400 rounded-full uppercase tracking-wide">{tag}</span>
+                                                ))}
+                                            </div>
+                                        </div>
+                                        <div className="ml-4 flex-shrink-0">
+                                            <p className="font-bold text-brand-400 text-base">{item.price}</p>
+                                        </div>
+                                    </div>
+                                ))
+                            )}
+                        </div>
+                        <div className="p-4 border-t border-cream-200">
+                            <button
+                                onClick={() => setShowSpecials(false)}
+                                className="w-full py-3 bg-brand-400 text-white font-bold rounded-2xl shadow-md hover:bg-amber-500 transition-all"
+                            >
+                                Close
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
             {/* Active Session Header */}
             <div className="p-4 border-b border-cream-200 bg-white flex justify-between items-center shadow-sm z-10">
                 <div className="flex items-center gap-4">
@@ -385,13 +503,21 @@ export const AiWaiter = () => {
 
             {/* Quick Actions Bar - Scrollable Left to Right */}
             <div className="px-4 py-3 flex flex-nowrap gap-2 overflow-x-auto scrollbar-hide border-t border-cream-200 bg-white overscroll-x-contain touch-pan-x">
-                {["Call Waiter", "Order Drinks", "Request Bill", "Dietary Question", "See Specials", "Get Manager"].map(action => (
+                {[
+                    { label: "Call Waiter", icon: "🛎️" },
+                    { label: "Order Drinks", icon: "🍷" },
+                    { label: "Request Bill", icon: "🧾" },
+                    { label: "Dietary Question", icon: "🥗" },
+                    { label: "See Specials", icon: "⭐" },
+                    { label: "Get Manager", icon: "👔" },
+                ].map(({ label, icon }) => (
                     <button 
-                        key={action}
-                        onClick={() => handleSendMessage(action)}
-                        className="px-5 py-2.5 rounded-full bg-cream-50 border border-cream-200 text-[11px] font-bold text-stone-400 whitespace-nowrap hover:bg-brand-400 hover:text-white hover:border-brand-400 transition-all flex-shrink-0 shadow-sm active:scale-95"
+                        key={label}
+                        onClick={() => handleQuickAction(label)}
+                        className="px-4 py-2.5 rounded-full bg-cream-50 border border-cream-200 text-[11px] font-bold text-stone-500 whitespace-nowrap hover:bg-brand-400 hover:text-white hover:border-brand-400 transition-all flex-shrink-0 shadow-sm active:scale-95 flex items-center gap-1.5"
                     >
-                        {action}
+                        <span>{icon}</span>
+                        <span>{label}</span>
                     </button>
                 ))}
             </div>
