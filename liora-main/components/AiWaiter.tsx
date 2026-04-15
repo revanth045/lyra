@@ -29,6 +29,9 @@ declare global {
   }
 }
 
+const CHAT_STORAGE_KEY = (restaurantName: string | null, tableNumber: string | null) =>
+    `liora_chat_${restaurantName ?? 'none'}_${tableNumber ?? 'none'}`;
+
 export const AiWaiter = () => {
     const { session, endSession, connectTableViaQR, addAssistanceRequest, updateOrders, updateAssistanceRequests } = useDining();
     const [messages, setMessages] = useState<ChatMessage[]>([]);
@@ -53,18 +56,51 @@ export const AiWaiter = () => {
     const streamRef = useRef<MediaStream | null>(null);
     const scanIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
-    // Initial greeting when checking in
+    // Restore or initialise chat messages when session becomes active
     useEffect(() => {
-        if (session.isActive && messages.length === 0) {
-            setMessages([{
-                id: uid(),
-                author: MessageAuthor.LIORA,
-                text: `Welcome to ${session.restaurantName}! I've connected to Table ${session.tableNumber}. \n\nThe **Chef's Special** today is the Truffle Risotto. Would you like to see the wine list or start with some sparkling water?`
-            }]);
+        if (session.isActive && session.restaurantName) {
+            const key = CHAT_STORAGE_KEY(session.restaurantName, session.tableNumber);
+            try {
+                const stored = localStorage.getItem(key);
+                const saved: ChatMessage[] = stored ? JSON.parse(stored) : [];
+                if (saved.length > 0) {
+                    setMessages(saved);
+                } else {
+                    setMessages([{
+                        id: uid(),
+                        author: MessageAuthor.LIORA,
+                        text: `Welcome to ${session.restaurantName}! I've connected to Table ${session.tableNumber}. \n\nThe **Chef's Special** today is the Truffle Risotto. Would you like to see the wine list or start with some sparkling water?`
+                    }]);
+                }
+            } catch {
+                setMessages([{
+                    id: uid(),
+                    author: MessageAuthor.LIORA,
+                    text: `Welcome to ${session.restaurantName}! I've connected to Table ${session.tableNumber}. \n\nThe **Chef's Special** today is the Truffle Risotto. Would you like to see the wine list or start with some sparkling water?`
+                }]);
+            }
         } else if (!session.isActive) {
             setMessages([]);
         }
     }, [session.isActive, session.restaurantName, session.tableNumber]);
+
+    // Clear stored chat when session ends so stale data doesn't linger
+    const lastSessionKeyRef = useRef<string | null>(null);
+    useEffect(() => {
+        if (session.isActive && session.restaurantName) {
+            lastSessionKeyRef.current = CHAT_STORAGE_KEY(session.restaurantName, session.tableNumber);
+        } else if (!session.isActive && lastSessionKeyRef.current) {
+            localStorage.removeItem(lastSessionKeyRef.current);
+            lastSessionKeyRef.current = null;
+        }
+    }, [session.isActive, session.restaurantName, session.tableNumber]);
+
+    // Persist messages to localStorage whenever they change
+    useEffect(() => {
+        if (!session.isActive || !session.restaurantName || messages.length === 0) return;
+        const key = CHAT_STORAGE_KEY(session.restaurantName, session.tableNumber);
+        try { localStorage.setItem(key, JSON.stringify(messages)); } catch { /* storage full */ }
+    }, [messages, session.isActive, session.restaurantName, session.tableNumber]);
 
     useEffect(() => {
         chatContainerRef.current?.scrollTo({ top: chatContainerRef.current.scrollHeight, behavior: 'smooth' });
