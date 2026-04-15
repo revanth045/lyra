@@ -129,6 +129,7 @@ export const Onboarding: React.FC<OnboardingProps> = ({ onProfileCreated }) => {
     try {
       const result = await generateUserProfile(finalAnswers);
       saveProfile({ summary: result.summary, profile: result.profile });
+      localStorage.removeItem('liora-needs-onboarding');
       setShowDiscount(true);
     } catch (err) {
       setError('Could not generate your profile. Please try again.');
@@ -158,7 +159,8 @@ export const Onboarding: React.FC<OnboardingProps> = ({ onProfileCreated }) => {
     </div>
   );
 
-  if (profile && !isLoading) return (
+  const needsOnboarding = localStorage.getItem('liora-needs-onboarding') === 'true';
+  if (profile && !isLoading && !needsOnboarding) return (
     <div className="w-full bg-white border border-cream-200 rounded-2xl shadow-sm p-6 md:p-8 flex flex-col gap-6">
       {showDiscount && (
         <div className="bg-brand-400/10 border border-brand-400/30 rounded-2xl p-4">

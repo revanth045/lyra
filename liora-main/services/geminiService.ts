@@ -735,15 +735,25 @@ export const generateChefDescriptions = async (inputs: any): Promise<ChefDashboa
 
 export const generateUserProfile = async (answers: OnboardingAnswers): Promise<{summary: string, profile: UserProfileData}> => {
     const ai = getAiClient();
-    const prompt = `Generate a user dining profile based on these answers: ${JSON.stringify(answers)}. JSON: { "summary": string, "profile": UserProfileData }`;
+    const prompt = `You are a dining profile generator. Based on the user's answers below, return ONLY a raw JSON object (no markdown, no code fences) in exactly this shape:
+{"summary":"<2-sentence friendly summary>","profile":{"name":"","city":"","budget":"${answers.budget}","cuisines":[],"spice":${answers.spice},"allergens":[],"diet":"","avoid":"","vibe":""}}
+
+User answers: ${JSON.stringify(answers)}`;
     
     const result = await ai.models.generateContent({
         model: 'gemini-2.5-flash',
         contents: prompt,
         config: { responseMimeType: 'application/json' }
     });
-    
-    return JSON.parse(result.text || '{}');
+
+    const rawText = result.text || '{}';
+    const { json } = extractJson<{summary: string, profile: UserProfileData}>(rawText, false);
+    if (json && json.summary && json.profile) return json;
+
+    const fallback = JSON.parse(rawText.replace(/```json|```/g, '').trim() || '{}');
+    if (fallback && fallback.summary) return fallback;
+
+    throw new Error('Invalid profile response from AI');
 };
 
 export const createProfileFromForm = async (data: any): Promise<UserProfileData> => {
