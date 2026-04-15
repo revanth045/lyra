@@ -11,6 +11,9 @@
     "start": "node server/index.js",
     "preview": "vite preview"
   },
+  "engines": {
+    "node": ">=18.0.0"
+  },
   "dependencies": {
     "@google/genai": "^1.27.0",
     "@supabase/supabase-js": "2",

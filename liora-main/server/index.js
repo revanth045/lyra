@@ -2,6 +2,12 @@ import express from 'express';
 import cors from 'cors';
 import helmet from 'helmet';
 import rateLimit from 'express-rate-limit';
+import { fileURLToPath } from 'url';
+import { dirname, join } from 'path';
+import { existsSync } from 'fs';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = dirname(__filename);
 
 import ordersRouter from './routes/orders.js';
 import menuRouter from './routes/menu.js';
@@ -13,7 +19,7 @@ import aiWaiterRouter from './routes/aiWaiter.js';
 const app = express();
 const PORT = process.env.PORT || 3001;
 
-// Trust Replit's proxy so rate-limit can read the real client IP
+// Trust Railway/Replit's proxy so rate-limit can read the real client IP
 app.set('trust proxy', 1);
 
 // ── Security middleware ────────────────────────────────────────────────────
@@ -36,8 +42,20 @@ app.use('/api/ai-waiter', aiWaiterRouter);
 // ── Health check ───────────────────────────────────────────────────────────
 app.get('/api/health', (_req, res) => res.json({ status: 'ok', ts: Date.now() }));
 
-// ── 404 handler ────────────────────────────────────────────────────────────
+// ── 404 handler for API ────────────────────────────────────────────────────
 app.use('/api', (_req, res) => res.status(404).json({ error: 'Endpoint not found' }));
+
+// ── Serve React frontend in production ─────────────────────────────────────
+const distPath = join(__dirname, '..', 'dist');
+if (existsSync(distPath)) {
+  app.use(express.static(distPath));
+  // SPA fallback — send index.html for any non-API route
+  app.get('*', (_req, res) => {
+    res.sendFile(join(distPath, 'index.html'));
+  });
+} else {
+  app.get('/', (_req, res) => res.json({ message: 'Liora API', health: '/api/health' }));
+}
 
 // ── Error handler ──────────────────────────────────────────────────────────
 app.use((err, _req, res, _next) => {
