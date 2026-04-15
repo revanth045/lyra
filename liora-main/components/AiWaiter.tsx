@@ -194,11 +194,10 @@ export const AiWaiter = () => {
     useEffect(() => {
         if (!session.isActive) return;
         const restaurant = db_getRestaurantByName(session.restaurantName);
-        if (restaurant) {
-            db_seedMenuIfEmpty(restaurant.id);
-            const items = db_listMenu(restaurant.id).filter(i => i.available);
-            setSpecials(items);
-        }
+        const restaurantId = restaurant?.id ?? session.restaurantName;
+        db_seedMenuIfEmpty(restaurantId);
+        const items = db_listMenu(restaurantId).filter(i => i.available);
+        setSpecials(items);
     }, [session.isActive, session.restaurantName]);
 
     const QUICK_ACTION_CONFIG: Record<string, { icon: string; alertMessage: string; confirmation: string }> = {
