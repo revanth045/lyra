@@ -14,7 +14,9 @@ import {
   db_addTableAlert,
   db_getRestaurantByName,
   db_listMenu,
-  type DemoMenuItem
+  db_addOrder,
+  type DemoMenuItem,
+  type DemoOrderItem
 } from '../src/demoDb';
 import { BillSplitter } from './BillSplitter';
 import jsQR from 'jsqr';
@@ -34,8 +36,16 @@ export const AiWaiter = () => {
     const [showSplitter, setShowSplitter] = useState(false);
     const [showQRScanner, setShowQRScanner] = useState(false);
     const [showSpecials, setShowSpecials] = useState(false);
+    const [showMenu, setShowMenu] = useState(false);
     const [specials, setSpecials] = useState<DemoMenuItem[]>([]);
+    const [cartQty, setCartQty] = useState<Record<string, number>>({});
+    const [orderSuccess, setOrderSuccess] = useState(false);
     const [qrError, setQrError] = useState('');
+
+    const cartCount = Object.values(cartQty).reduce((sum, q) => sum + q, 0);
+    const cartTotal = specials
+        .filter(i => (cartQty[i.id] ?? 0) > 0)
+        .reduce((sum, i) => sum + i.priceCents * (cartQty[i.id] ?? 0), 0);
     const chatContainerRef = useRef<HTMLDivElement>(null);
     const videoRef = useRef<HTMLVideoElement>(null);
     const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -214,6 +224,46 @@ export const AiWaiter = () => {
             author: MessageAuthor.SYSTEM,
             text: `${config.icon} ${config.confirmation}`,
         }]);
+    };
+
+    const adjustCart = (itemId: string, delta: number) => {
+        setCartQty(prev => {
+            const next = { ...prev, [itemId]: Math.max(0, (prev[itemId] ?? 0) + delta) };
+            if (next[itemId] === 0) delete next[itemId];
+            return next;
+        });
+    };
+
+    const handleSendOrder = () => {
+        const restaurant = db_getRestaurantByName(session.restaurantName);
+        const items: DemoOrderItem[] = specials
+            .filter(i => (cartQty[i.id] ?? 0) > 0)
+            .map(i => ({ menuItemId: i.id, name: i.name, qty: cartQty[i.id], priceCents: i.priceCents }));
+
+        if (items.length === 0) return;
+
+        db_addOrder({
+            restaurantId: restaurant?.id ?? session.restaurantName,
+            customerName: `Table ${session.tableNumber} Guest`,
+            tableNumber: String(session.tableNumber),
+            items,
+            status: 'pending',
+            totalCents: cartTotal,
+            createdAt: Date.now(),
+        });
+
+        setOrderSuccess(true);
+        setMessages(prev => [...prev, {
+            id: uid(),
+            author: MessageAuthor.SYSTEM,
+            text: `🍽️ Your order has been sent to ${session.restaurantName}! The kitchen will prepare your items shortly.`,
+        }]);
+
+        setTimeout(() => {
+            setOrderSuccess(false);
+            setShowMenu(false);
+            setCartQty({});
+        }, 1800);
     };
 
     const handleSendMessage = async (textOverride?: string) => {
@@ -437,6 +487,103 @@ export const AiWaiter = () => {
                 </div>
             )}
 
+            {/* Menu + Order Modal Overlay */}
+            {showMenu && (
+                <div className="absolute inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-end justify-center">
+                    <div className="bg-white w-full max-h-[88%] rounded-t-3xl overflow-hidden flex flex-col shadow-2xl">
+                        {/* Header */}
+                        <div className="p-5 border-b border-cream-200 flex items-center justify-between bg-gradient-to-r from-stone-800 to-stone-700 flex-shrink-0">
+                            <div>
+                                <h3 className="font-lora font-bold text-xl text-white">Menu</h3>
+                                <p className="text-white/70 text-xs mt-0.5">{session.restaurantName} · Table {session.tableNumber}</p>
+                            </div>
+                            <button onClick={() => setShowMenu(false)} className="text-white/70 hover:text-white p-1">
+                                <Icon name="close" size={22} />
+                            </button>
+                        </div>
+
+                        {/* Order success overlay */}
+                        {orderSuccess && (
+                            <div className="absolute inset-0 bg-white z-10 flex flex-col items-center justify-center gap-4">
+                                <div className="w-20 h-20 bg-green-100 rounded-full flex items-center justify-center">
+                                    <Icon name="check_circle" size={48} className="text-green-500" />
+                                </div>
+                                <p className="font-lora font-bold text-2xl text-stone-800">Order Sent!</p>
+                                <p className="text-stone-400 text-sm">The kitchen is on it.</p>
+                            </div>
+                        )}
+
+                        {/* Menu items list */}
+                        <div className="overflow-y-auto flex-1 p-4 space-y-3">
+                            {specials.length === 0 ? (
+                                <div className="flex flex-col items-center justify-center py-16 text-center text-stone-400 gap-3">
+                                    <Icon name="menu_book" size={48} className="opacity-20" />
+                                    <p className="font-bold text-stone-500">Menu not set up yet</p>
+                                    <p className="text-sm">Please ask your waiter for today's menu.</p>
+                                </div>
+                            ) : specials.map(item => {
+                                const qty = cartQty[item.id] ?? 0;
+                                return (
+                                    <div key={item.id} className="flex items-center gap-3 bg-cream-50 border border-cream-200 rounded-2xl p-4 shadow-sm">
+                                        <div className="flex-1 min-w-0">
+                                            <p className="font-bold text-stone-800 text-sm">{item.name}</p>
+                                            {item.description && <p className="text-stone-400 text-xs mt-0.5 line-clamp-2">{item.description}</p>}
+                                            {item.tags && item.tags.length > 0 && (
+                                                <div className="flex flex-wrap gap-1 mt-1.5">
+                                                    {item.tags.map(tag => (
+                                                        <span key={tag} className="text-[10px] font-bold px-2 py-0.5 bg-stone-100 text-stone-500 rounded-full uppercase tracking-wide">{tag}</span>
+                                                    ))}
+                                                </div>
+                                            )}
+                                            <p className="font-bold text-brand-400 text-sm mt-1.5">${(item.priceCents / 100).toFixed(2)}</p>
+                                        </div>
+                                        {/* Qty control */}
+                                        <div className="flex items-center gap-2 flex-shrink-0">
+                                            {qty > 0 ? (
+                                                <>
+                                                    <button
+                                                        onClick={() => adjustCart(item.id, -1)}
+                                                        className="w-8 h-8 rounded-full bg-white border-2 border-stone-200 text-stone-600 font-bold text-lg hover:border-red-300 hover:text-red-500 transition-all flex items-center justify-center"
+                                                    >−</button>
+                                                    <span className="w-6 text-center font-bold text-stone-800 text-sm">{qty}</span>
+                                                    <button
+                                                        onClick={() => adjustCart(item.id, 1)}
+                                                        className="w-8 h-8 rounded-full bg-brand-400 text-white font-bold text-lg hover:bg-amber-500 transition-all flex items-center justify-center shadow-sm"
+                                                    >+</button>
+                                                </>
+                                            ) : (
+                                                <button
+                                                    onClick={() => adjustCart(item.id, 1)}
+                                                    className="w-8 h-8 rounded-full bg-brand-400 text-white font-bold text-lg hover:bg-amber-500 transition-all flex items-center justify-center shadow-sm"
+                                                >+</button>
+                                            )}
+                                        </div>
+                                    </div>
+                                );
+                            })}
+                        </div>
+
+                        {/* Footer — cart summary + send button */}
+                        <div className="p-4 border-t border-cream-200 bg-white flex-shrink-0 space-y-3">
+                            {cartCount > 0 && (
+                                <div className="flex items-center justify-between px-1">
+                                    <span className="text-sm font-bold text-stone-600">{cartCount} item{cartCount !== 1 ? 's' : ''} selected</span>
+                                    <span className="text-sm font-bold text-stone-800">${(cartTotal / 100).toFixed(2)}</span>
+                                </div>
+                            )}
+                            <button
+                                onClick={handleSendOrder}
+                                disabled={cartCount === 0}
+                                className="w-full py-3.5 bg-brand-400 text-white font-bold rounded-2xl shadow-md hover:bg-amber-500 disabled:opacity-40 disabled:cursor-not-allowed transition-all flex items-center justify-center gap-2"
+                            >
+                                <Icon name="send" size={18} />
+                                {cartCount > 0 ? `Send Order · $${(cartTotal / 100).toFixed(2)}` : 'Add items to order'}
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
             {/* Active Session Header */}
             <div className="p-4 border-b border-cream-200 bg-white flex justify-between items-center shadow-sm z-10">
                 <div className="flex items-center gap-4">
@@ -456,6 +603,17 @@ export const AiWaiter = () => {
                     </div>
                 </div>
                 <div className="flex items-center gap-2">
+                    <button 
+                        onClick={() => setShowMenu(true)}
+                        className="relative p-2.5 bg-cream-50 text-stone-800 rounded-xl hover:bg-cream-200/60 transition-all shadow-sm flex items-center gap-2 text-xs font-bold border border-cream-200"
+                    >
+                        <Icon name="menu_book" size={16} /> <span className="hidden sm:inline">Menu</span>
+                        {cartCount > 0 && (
+                            <span className="absolute -top-1.5 -right-1.5 w-4 h-4 bg-brand-400 text-white text-[9px] font-bold rounded-full flex items-center justify-center shadow">
+                                {cartCount}
+                            </span>
+                        )}
+                    </button>
                     <button 
                         onClick={() => setShowSplitter(true)}
                         className="p-2.5 bg-cream-50 text-stone-800 rounded-xl hover:bg-cream-200/60 transition-all shadow-sm flex items-center gap-2 text-xs font-bold border border-cream-200"
