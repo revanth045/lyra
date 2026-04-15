@@ -105,12 +105,16 @@ export default function UserShell() {
     // Show onboarding on first visit
     const [showOnboarding, setShowOnboarding] = useState(false);
     useEffect(() => {
-        if (!profileLoading && !profile && session) {
-            setShowOnboarding(true);
+        if (!profileLoading && session) {
+            const needsOnboarding = localStorage.getItem('liora-needs-onboarding') === 'true';
+            if (!profile || needsOnboarding) {
+                setShowOnboarding(true);
+            }
         }
     }, [profileLoading, profile, session]);
 
     const handleProfileCreated = () => {
+        localStorage.removeItem('liora-needs-onboarding');
         setShowOnboarding(false);
         setView('home');
     };
@@ -128,14 +132,16 @@ export default function UserShell() {
         return (
             <ConversationProvider>
                 <DiningProvider>
-                    <div className="h-screen bg-cream-50 text-stone-800">
-                        <Suspense fallback={<PageSpinner />}>
-                            {showOnboarding ? (
-                                <OnboardingPage onProfileCreated={handleProfileCreated} />
-                            ) : view === 'checkout' ? (
-                                <CheckoutPage onNavigate={setView} />
-                            ) : null}
-                        </Suspense>
+                    <div className="min-h-screen bg-cream-50 text-stone-800 overflow-y-auto">
+                        <div className="max-w-2xl mx-auto px-4 py-8">
+                            <Suspense fallback={<PageSpinner />}>
+                                {showOnboarding ? (
+                                    <OnboardingPage onProfileCreated={handleProfileCreated} />
+                                ) : view === 'checkout' ? (
+                                    <CheckoutPage onNavigate={setView} />
+                                ) : null}
+                            </Suspense>
+                        </div>
                     </div>
                     <PremiumModal />
                 </DiningProvider>

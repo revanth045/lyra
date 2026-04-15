@@ -238,7 +238,7 @@ export const UserProfile: React.FC<UserProfileProps> = ({ setView }) => {
                         <h3 className="font-lora text-2xl font-bold">Liora Insights</h3>
                     </div>
                     <p className="text-white/80 text-lg leading-relaxed mb-10 font-medium italic">
-                        "{profile.summary}"
+                        "{typeof profile.summary === 'string' ? profile.summary : String(profile.summary ?? '')}"
                     </p>
                     <button 
                         onClick={() => setView('account')}
@@ -254,9 +254,9 @@ export const UserProfile: React.FC<UserProfileProps> = ({ setView }) => {
                 <div className="col-span-1 md:col-span-2 bg-white p-8 rounded-[2rem] border border-cream-200 shadow-sm">
                     <h3 className="font-lora text-xl text-stone-800 font-bold mb-6">Your Flavor Palette</h3>
                     <div className="flex flex-wrap gap-3">
-                        {(profile.profile.cuisines || []).map(c => (
-                            <span key={c} className="px-5 py-2.5 bg-white border border-cream-200 text-stone-800 font-bold text-xs rounded-xl shadow-sm hover:border-[#e9ae1e] transition-all cursor-default">
-                                {c}
+                        {(Array.isArray(profile.profile.cuisines) ? profile.profile.cuisines : []).map(c => (
+                            <span key={String(c)} className="px-5 py-2.5 bg-white border border-cream-200 text-stone-800 font-bold text-xs rounded-xl shadow-sm hover:border-[#e9ae1e] transition-all cursor-default">
+                                {String(c)}
                             </span>
                         ))}
                         <button onClick={() => setView('account')} className="px-5 py-2.5 bg-cream-100/80 border border-dashed border-cream-200 text-stone-400 font-bold text-xs rounded-xl hover:text-stone-800 transition-all">+ Add New</button>
@@ -276,7 +276,7 @@ export const UserProfile: React.FC<UserProfileProps> = ({ setView }) => {
                     <div className="bg-white p-12 rounded-[2rem] border border-cream-200 text-center">
                         <Icon name="receipt" size={48} className="mx-auto text-stone-400 mb-4" />
                         <p className="text-stone-400 font-medium">Your digital receipt book is empty.</p>
-                        <button onClick={() => setView('food')} className="mt-4 text-brand-400 font-bold underline text-sm">Explore Food Hub</button>
+                        <button onClick={() => setView('restaurants')} className="mt-4 text-brand-400 font-bold underline text-sm">Explore Food Hub</button>
                     </div>
                 ) : (
                     <div className="grid gap-4">

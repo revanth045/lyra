@@ -260,7 +260,7 @@ export const AccountSettings: React.FC<AccountSettingsProps> = ({ setView }) => 
                         <div className="flex-grow">
                             <h3 className="font-semibold text-lg text-stone-800">Your AI-Generated Profile</h3>
                             <p className="text-sm text-stone-400 italic mt-1 max-w-prose">
-                                "{profile.summary}"
+                                "{typeof profile.summary === 'string' ? profile.summary : String(profile.summary ?? '')}"
                             </p>
                             <div className="mt-4 flex flex-wrap gap-2">
                                 {Object.entries(profile.profile).map(([key, value]) => {

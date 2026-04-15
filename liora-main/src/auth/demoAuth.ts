@@ -92,6 +92,7 @@ export const DemoAuth: AuthAdapter = {
     users.push(u); 
     write(UKEY, users);
     upsertSavedAccount({ email, role: "user", name: fullName });
+    localStorage.setItem('liora-needs-onboarding', 'true');
   },
 
   async signInUser(email: string, password: string) {
@@ -155,11 +156,15 @@ export const DemoAuth: AuthAdapter = {
     const googleName = "Google User (Demo)";
     const users = read<DemoUser[]>(UKEY, []);
     let u = users.find(x => x.email === googleEmail);
+    const isNewGoogleUser = !u;
     if (!u) {
       u = { id: cryptoRandom(), email: googleEmail, password: googlePassword, role: "user", name: googleName, lastUsedAt: Date.now() };
       users.push(u);
       write(UKEY, users);
       upsertSavedAccount({ email: googleEmail, role: "user", name: googleName });
+    }
+    if (isNewGoogleUser) {
+      localStorage.setItem('liora-needs-onboarding', 'true');
     }
     u.lastUsedAt = Date.now();
     write(UKEY, users);
