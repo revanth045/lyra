@@ -110,6 +110,44 @@ export const Onboarding: React.FC<OnboardingProps> = ({ onProfileCreated }) => {
   const toggleArr = <T,>(arr: T[], item: T): T[] => arr.includes(item) ? arr.filter(x => x !== item) : [...arr, item];
   const set = (partial: Partial<OnboardingAnswers>) => setAnswers(prev => ({ ...prev, ...partial }));
 
+  const buildLocalProfile = (ans: OnboardingAnswers) => {
+    const lifestyle = ans.lifestyle ?? '';
+    const allergenLabels: Record<string, string> = {
+      peanuts: 'Peanuts / Tree Nuts', dairy: 'Dairy', gluten: 'Gluten', eggs: 'Eggs',
+      shellfish: 'Shellfish', soy: 'Soy', sesame: 'Sesame', other: 'Other',
+    };
+    const allergens = (ans.allergies ?? []).map(a => allergenLabels[a] ?? a);
+    const religiousLabels: Record<string, string> = {
+      halal: 'Halal', kosher: 'Kosher', noPork: 'No Pork', noBeef: 'No Beef', noAlcohol: 'No Alcohol',
+    };
+    const religiousTags = (ans.religious ?? []).map(r => religiousLabels[r] ?? r);
+    const healthLabels: Record<string, string> = {
+      diabetic: 'Diabetic-Friendly', lowSodium: 'Low Sodium', lowFat: 'Low Fat', softFoods: 'Soft Foods Only',
+    };
+    const healthTags = (ans.healthNeeds ?? []).map(h => healthLabels[h] ?? h);
+    const dietParts = [lifestyle, ...religiousTags, ...healthTags, ans.customReligious ?? ''].filter(Boolean);
+    const summaryParts: string[] = [];
+    if (dietParts.length) summaryParts.push(dietParts.join(', ') + ' dining preferences');
+    if (ans.cuisines.length) summaryParts.push(`a love of ${ans.cuisines.slice(0, 3).join(', ')} cuisine`);
+    if (allergens.length) summaryParts.push(`allergies to ${allergens.join(', ')}`);
+    const summary = summaryParts.length
+      ? `Your Liora profile is tailored around ${summaryParts.join('; ')}. We'll use this to personalise every recommendation for you.`
+      : `Welcome to Liora! Your personalised dining profile is ready. We'll use your preferences to find the perfect meals for you.`;
+    return {
+      summary,
+      profile: {
+        name: '', city: '',
+        budget: ans.budget || '$$',
+        cuisines: ans.cuisines,
+        spice: ans.spice || 3,
+        allergens,
+        diet: dietParts.join(', ') || 'No specific diet',
+        avoid: allergens.join(', ') || 'None',
+        vibe: ans.notes || ans.vibe || 'Cozy and casual',
+      },
+    };
+  };
+
   const handleSubmit = async () => {
     setIsLoading(true);
     setError(null);
@@ -127,12 +165,18 @@ export const Onboarding: React.FC<OnboardingProps> = ({ onProfileCreated }) => {
       setLoadingMessage(prev => { const idx = LOADING_MESSAGES.indexOf(prev); return LOADING_MESSAGES[(idx + 1) % LOADING_MESSAGES.length]; });
     }, 2500);
     try {
-      const result = await generateUserProfile(finalAnswers);
+      let result: { summary: string; profile: any };
+      try {
+        result = await generateUserProfile(finalAnswers);
+        if (!result?.summary || !result?.profile) throw new Error('incomplete');
+      } catch {
+        result = buildLocalProfile(finalAnswers);
+      }
       saveProfile({ summary: result.summary, profile: result.profile });
       localStorage.removeItem('liora-needs-onboarding');
       setShowDiscount(true);
     } catch (err) {
-      setError('Could not generate your profile. Please try again.');
+      setError('Could not save your profile. Please try again.');
     } finally {
       clearInterval(loadingRef.current!);
       setIsLoading(false);
