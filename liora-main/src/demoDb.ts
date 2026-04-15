@@ -41,6 +41,28 @@ export function db_deleteMenu(id:string){
   write(MKEY, all.filter(x=>x.id!==id));
 }
 
+export function db_seedMenuIfEmpty(restaurantId: string) {
+  const existing = read<DemoMenuItem[]>(MKEY, []).filter(m => m.restaurantId === restaurantId);
+  if (existing.length > 0) return;
+  const seeds: Omit<DemoMenuItem, 'id'>[] = [
+    { restaurantId, name: 'Bruschetta al Pomodoro', description: 'Toasted sourdough with fresh tomatoes, garlic, basil and a drizzle of extra virgin olive oil.', priceCents: 1200, tags: ['Starter', 'Vegetarian'], available: true },
+    { restaurantId, name: 'Burrata & Prosciutto', description: 'Creamy burrata served with thinly sliced prosciutto, rocket and aged balsamic.', priceCents: 1650, tags: ['Starter'], available: true },
+    { restaurantId, name: 'Rigatoni Amatriciana', description: 'Rigatoni tossed in a rich tomato and guanciale sauce, finished with Pecorino Romano.', priceCents: 1950, tags: ['Pasta', 'Chef Favourite'], available: true },
+    { restaurantId, name: 'Mushroom Truffle Risotto', description: 'Wild mushroom and Arborio rice risotto finished with black truffle oil and Parmesan shavings.', priceCents: 2200, tags: ['Main', 'Vegetarian'], available: true },
+    { restaurantId, name: 'Grilled Sea Bass', description: 'Pan-seared sea bass with lemon butter, capers, cherry tomatoes and wilted spinach.', priceCents: 2850, tags: ['Main', 'Seafood'], available: true },
+    { restaurantId, name: 'Lamb Rack Scottadito', description: 'Herb-crusted lamb cutlets with roasted garlic mash and red wine jus.', priceCents: 3400, tags: ['Main'], available: true },
+    { restaurantId, name: 'Margherita Pizza', description: 'Classic Neapolitan base with San Marzano tomatoes, fior di latte mozzarella and fresh basil.', priceCents: 1800, tags: ['Pizza', 'Vegetarian'], available: true },
+    { restaurantId, name: 'Tiramisu', description: 'House-made tiramisu with espresso-soaked ladyfingers, mascarpone cream and dark cocoa.', priceCents: 1100, tags: ['Dessert'], available: true },
+    { restaurantId, name: 'Panna Cotta', description: 'Vanilla panna cotta with a seasonal berry coulis and candied orange zest.', priceCents: 950, tags: ['Dessert'], available: true },
+    { restaurantId, name: 'Still / Sparkling Water', description: '500ml bottle.', priceCents: 450, tags: ['Drinks'], available: true },
+    { restaurantId, name: 'House Red Wine (Glass)', description: 'Rotating selection of Italian reds — ask your waiter for today\'s pour.', priceCents: 1100, tags: ['Drinks'], available: true },
+    { restaurantId, name: 'Espresso', description: 'Single or double shot of our signature espresso blend.', priceCents: 400, tags: ['Drinks', 'Coffee'], available: true },
+  ];
+  const all = read<DemoMenuItem[]>(MKEY, []);
+  seeds.forEach(s => all.push({ id: uid(), ...s }));
+  write(MKEY, all);
+}
+
 export function db_logEvent(ev:Omit<DemoEvent,"id"|"ts">){
   const all = read<DemoEvent[]>(EKEY, []);
   all.push({ id:uid(), ts:Date.now(), ...ev });

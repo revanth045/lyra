@@ -14,6 +14,7 @@ import {
   db_addTableAlert,
   db_getRestaurantByName,
   db_listMenu,
+  db_seedMenuIfEmpty,
   db_addOrder,
   type DemoMenuItem,
   type DemoOrderItem
@@ -191,6 +192,7 @@ export const AiWaiter = () => {
         if (!session.isActive) return;
         const restaurant = db_getRestaurantByName(session.restaurantName);
         if (restaurant) {
+            db_seedMenuIfEmpty(restaurant.id);
             const items = db_listMenu(restaurant.id).filter(i => i.available);
             setSpecials(items);
         }
