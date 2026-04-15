@@ -4,6 +4,66 @@ import { StoredUserProfile } from '../types';
 
 const LOCAL_STORAGE_KEY = 'liora-user-profile';
 
+/** Coerce any value to a plain string, never throws */
+const toStr = (v: unknown): string => {
+    if (typeof v === 'string') return v;
+    if (v == null) return '';
+    if (Array.isArray(v)) return v.map(x => (typeof x === 'string' || typeof x === 'number') ? String(x) : '').filter(Boolean).join(', ');
+    if (typeof v === 'object') {
+        try {
+            const vals = Object.values(v as Record<string, unknown>)
+                .filter(x => typeof x === 'string' || typeof x === 'number');
+            return vals.map(String).join(', ');
+        } catch { return ''; }
+    }
+    try { return String(v); } catch { return ''; }
+};
+
+/** Coerce any value to a string array, never throws */
+const toStrArr = (v: unknown): string[] => {
+    if (Array.isArray(v)) return v.map(x => (typeof x === 'string' || typeof x === 'number') ? String(x) : null).filter(Boolean) as string[];
+    if (typeof v === 'string' && v.trim()) return v.split(',').map(s => s.trim()).filter(Boolean);
+    return [];
+};
+
+/** Coerce any value to a number, never throws */
+const toNum = (v: unknown, fallback: number): number => {
+    if (typeof v === 'number' && !isNaN(v)) return v;
+    if (typeof v === 'string') { const n = parseFloat(v); if (!isNaN(n)) return n; }
+    if (v != null && typeof v === 'object') {
+        const inner = Object.values(v as Record<string, unknown>).find(x => typeof x === 'number');
+        if (inner !== undefined) return inner as number;
+    }
+    return fallback;
+};
+
+/**
+ * Sanitize a raw profile object from localStorage — ensures every field is the
+ * correct primitive type regardless of what the AI or old code stored.
+ */
+const sanitizeProfile = (raw: unknown): StoredUserProfile | null => {
+    if (!raw || typeof raw !== 'object') return null;
+    const r = raw as Record<string, unknown>;
+    const p = (r.profile && typeof r.profile === 'object') ? r.profile as Record<string, unknown> : {};
+    return {
+        summary: toStr(r.summary) || 'Your dining profile is ready.',
+        profile: {
+            name: toStr(p.name),
+            city: toStr(p.city),
+            budget: toStr(p.budget) || '$$',
+            cuisines: toStrArr(p.cuisines),
+            spice: toNum(p.spice, 3),
+            allergens: toStrArr(p.allergens),
+            diet: toStr(p.diet) || 'No specific diet',
+            avoid: toStr(p.avoid) || 'None',
+            vibe: toStr(p.vibe) || 'Cozy and casual',
+        },
+        aiPreferences: (r.aiPreferences && typeof r.aiPreferences === 'object')
+            ? r.aiPreferences as StoredUserProfile['aiPreferences']
+            : undefined,
+    };
+};
+
 export const useUserProfile = () => {
     const [profile, setProfile] = useState<StoredUserProfile | null>(null);
     const [isLoading, setIsLoading] = useState(true);
@@ -12,7 +72,11 @@ export const useUserProfile = () => {
         try {
             const storedProfile = localStorage.getItem(LOCAL_STORAGE_KEY);
             if (storedProfile) {
-                setProfile(JSON.parse(storedProfile));
+                const raw = JSON.parse(storedProfile);
+                const clean = sanitizeProfile(raw);
+                if (clean) {
+                    setProfile(clean);
+                }
             }
         } catch (e) {
             console.error("Failed to parse user profile from localStorage", e);
@@ -24,8 +88,9 @@ export const useUserProfile = () => {
 
     const saveProfile = useCallback((newProfile: StoredUserProfile) => {
         try {
-            localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(newProfile));
-            setProfile(newProfile);
+            const clean = sanitizeProfile(newProfile) ?? newProfile;
+            localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(clean));
+            setProfile(clean as StoredUserProfile);
         } catch (e) {
             console.error("Failed to save user profile to localStorage", e);
         }
