@@ -229,7 +229,7 @@ export const UserProfile: React.FC<UserProfileProps> = ({ setView }) => {
                 </div>
 
                 {/* AI Observations */}
-                <div className="bg-cream-100 text-white p-10 rounded-[2.5rem] shadow-2xl relative overflow-hidden group">
+                <div className="bg-stone-800 text-white p-10 rounded-[2.5rem] shadow-2xl relative overflow-hidden group">
                     <div className="relative z-10">
                     <div className="flex items-center gap-3 mb-8">
                         <div className="p-2.5 bg-white/10 rounded-2xl backdrop-blur-xl border border-cream-100">
