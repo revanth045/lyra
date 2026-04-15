@@ -5,7 +5,7 @@ import { uid, tableSessions, assistanceRequests, orders, now } from '../store.js
 const router = Router();
 
 // Initialize AI Client (reuse from frontend service)
-const getAiClient = () => new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
+const getAiClient = () => new GoogleGenAI({ apiKey: process.env.GOOGLE_API_KEY });
 
 const SYSTEM_PROMPT = `You are Liora, an AI Dining Companion acting as a waiter at a restaurant.
 
