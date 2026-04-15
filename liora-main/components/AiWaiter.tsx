@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { Icon } from './Icon';
 import { Spinner } from './Spinner';
 import { useDining } from '../src/context/DiningContext';
+import { useSession } from '../src/auth/useSession';
 import { ChatMessage, MessageAuthor } from '../types';
 import { uid } from '../utils/uid';
 import {
@@ -29,11 +30,13 @@ declare global {
   }
 }
 
-const CHAT_STORAGE_KEY = (restaurantName: string | null, tableNumber: string | null) =>
-    `liora_chat_${restaurantName ?? 'none'}_${tableNumber ?? 'none'}`;
+const CHAT_STORAGE_KEY = (userEmail: string | null, restaurantName: string | null, tableNumber: string | null) =>
+    `liora_chat_${userEmail ?? 'guest'}_${restaurantName ?? 'none'}_${tableNumber ?? 'none'}`;
 
 export const AiWaiter = () => {
     const { session, endSession, connectTableViaQR, addAssistanceRequest, updateOrders, updateAssistanceRequests } = useDining();
+    const authSession = useSession();
+    const userEmail = authSession?.user?.email ?? null;
     const [messages, setMessages] = useState<ChatMessage[]>([]);
     const [input, setInput] = useState('');
     const [isLoading, setIsLoading] = useState(false);
@@ -59,7 +62,7 @@ export const AiWaiter = () => {
     // Restore or initialise chat messages when session becomes active
     useEffect(() => {
         if (session.isActive && session.restaurantName) {
-            const key = CHAT_STORAGE_KEY(session.restaurantName, session.tableNumber);
+            const key = CHAT_STORAGE_KEY(userEmail, session.restaurantName, session.tableNumber);
             try {
                 const stored = localStorage.getItem(key);
                 const saved: ChatMessage[] = stored ? JSON.parse(stored) : [];
@@ -88,7 +91,7 @@ export const AiWaiter = () => {
     const lastSessionKeyRef = useRef<string | null>(null);
     useEffect(() => {
         if (session.isActive && session.restaurantName) {
-            lastSessionKeyRef.current = CHAT_STORAGE_KEY(session.restaurantName, session.tableNumber);
+            lastSessionKeyRef.current = CHAT_STORAGE_KEY(userEmail, session.restaurantName, session.tableNumber);
         } else if (!session.isActive && lastSessionKeyRef.current) {
             localStorage.removeItem(lastSessionKeyRef.current);
             lastSessionKeyRef.current = null;
@@ -98,7 +101,7 @@ export const AiWaiter = () => {
     // Persist messages to localStorage whenever they change
     useEffect(() => {
         if (!session.isActive || !session.restaurantName || messages.length === 0) return;
-        const key = CHAT_STORAGE_KEY(session.restaurantName, session.tableNumber);
+        const key = CHAT_STORAGE_KEY(userEmail, session.restaurantName, session.tableNumber);
         try { localStorage.setItem(key, JSON.stringify(messages)); } catch { /* storage full */ }
     }, [messages, session.isActive, session.restaurantName, session.tableNumber]);
 
@@ -315,6 +318,7 @@ export const AiWaiter = () => {
         db_addOrder({
             restaurantId: restaurant?.id ?? session.restaurantName,
             customerName: `Table ${session.tableNumber} Guest`,
+            customerEmail: userEmail ?? undefined,
             tableNumber: String(session.tableNumber),
             items,
             status: 'pending',

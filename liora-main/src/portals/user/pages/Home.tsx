@@ -80,7 +80,7 @@ export default function HomePage({ setView }: HomeProps) {
         if (!userEmail) return;
         const all = db_listAllOrders();
         setMyOrders(
-            all.filter(o => !o.customerEmail || o.customerEmail === userEmail).slice(0, 5)
+            all.filter(o => o.customerEmail === userEmail).slice(0, 5)
         );
     }, [userEmail]);
 
