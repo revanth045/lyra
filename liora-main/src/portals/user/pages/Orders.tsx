@@ -165,9 +165,7 @@ export default function OrdersPage() {
     const load = () => {
       const all = db_listAllOrders();
       // Show only this user's orders (matched by email, or all if no email yet)
-      const mine = userEmail
-        ? all.filter(o => !o.customerEmail || o.customerEmail === userEmail)
-        : all.filter(o => !o.customerEmail);
+      const mine = all.filter(o => o.customerEmail === userEmail);
       setOrders(mine);
       setRestaurants(db_getAllRestaurants());
     };
