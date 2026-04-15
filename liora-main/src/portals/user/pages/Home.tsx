@@ -7,6 +7,14 @@ import {
     type DemoRestaurant, type DemoOrder, type DemoPromotion,
 } from '../../../demoDb';
 import { Icon } from '../../../../components/Icon';
+import imgAiChef from '@assets/Happy_robot_chef_in_action_1776233731026.png';
+import imgOffers from '@assets/offers_1776233841155.png';
+import imgNearby from '@assets/Nearby_1776233850952.png';
+import imgCalorie from '@assets/calorie_1776233856996.png';
+import imgAiWaiter from '@assets/Aiwaiter_1776233866008.png';
+import imgAiChat from '@assets/AiChat_1776233876053.png';
+import imgOrders from '@assets/orders_1776233886335.png';
+import imgRestaurants from '@assets/restaurants_1776233894365.png';
 
 interface HomeProps {
     favorites: ChatMessage[];
@@ -24,15 +32,15 @@ function timeGreeting() {
 
 function fmt(cents: number) { return `$${(cents / 100).toFixed(2)}`; }
 
-const QUICK_ACTIONS: { icon: string; label: string; view: View; color: string; bg: string }[] = [
-    { icon: 'restaurant', label: 'Restaurants', view: 'restaurants', color: 'text-amber-600', bg: 'bg-amber-50' },
-    { icon: 'receipt_long', label: 'My Orders', view: 'orders', color: 'text-blue-600', bg: 'bg-blue-50' },
-    { icon: 'smart_toy', label: 'AI Chat', view: 'ai_chat', color: 'text-violet-600', bg: 'bg-violet-50' },
-    { icon: 'room_service', label: 'AI Waiter', view: 'ai_waiter', color: 'text-orange-600', bg: 'bg-orange-50' },
-    { icon: 'restaurant_menu', label: 'AI Chef', view: 'chef_mode', color: 'text-green-600', bg: 'bg-green-50' },
-    { icon: 'monitor_weight', label: 'Calorie Log', view: 'calorie_log', color: 'text-rose-600', bg: 'bg-rose-50' },
-    { icon: 'map', label: 'Nearby', view: 'nearby', color: 'text-teal-600', bg: 'bg-teal-50' },
-    { icon: 'local_offer', label: 'Deals', view: 'offers', color: 'text-fuchsia-600', bg: 'bg-fuchsia-50' },
+const QUICK_ACTIONS: { img: string; label: string; view: View }[] = [
+    { img: imgAiChef,      label: 'AI Chef',     view: 'chef_mode'   },
+    { img: imgOffers,      label: 'Deals',       view: 'offers'      },
+    { img: imgNearby,      label: 'Nearby',      view: 'nearby'      },
+    { img: imgCalorie,     label: 'Calorie Log', view: 'calorie_log' },
+    { img: imgAiWaiter,    label: 'AI Waiter',   view: 'ai_waiter'   },
+    { img: imgAiChat,      label: 'AI Chat',     view: 'ai_chat'     },
+    { img: imgOrders,      label: 'My Orders',   view: 'orders'      },
+    { img: imgRestaurants, label: 'Restaurants', view: 'restaurants' },
 ];
 
 const CUISINE_EMOJI: Record<string, string> = {
@@ -137,8 +145,8 @@ export default function HomePage({ setView }: HomeProps) {
                                 onClick={() => setView(action.view)}
                                 className="flex flex-col items-center gap-2 py-3 px-1 bg-white rounded-2xl border border-cream-200 shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all active:scale-95"
                             >
-                                <div className={`w-10 h-10 ${action.bg} rounded-xl flex items-center justify-center`}>
-                                    <Icon name={action.icon} size={20} className={action.color} />
+                                <div className="w-12 h-12 flex items-center justify-center">
+                                    <img src={action.img} alt={action.label} className="w-12 h-12 object-contain" />
                                 </div>
                                 <span className="text-[10px] font-bold text-stone-600 text-center leading-tight">{action.label}</span>
                             </button>
