@@ -63,3 +63,5 @@ export const DatingHub = () => {
     </div>
   );
 };
+
+export default DatingHub;

@@ -481,3 +481,5 @@ export const UserProfile: React.FC<UserProfileProps> = ({ setView }) => {
     </div>
   );
 };
+
+export default UserProfile;

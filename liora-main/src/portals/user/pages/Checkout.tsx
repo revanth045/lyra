@@ -228,3 +228,4 @@ export const Checkout = ({ onNavigate }: { onNavigate: (tab: View) => void }) =>
     </div>
   );
 };
+export default Checkout;

@@ -7,57 +7,72 @@ interface ErrorBoundaryProps {
 
 interface ErrorBoundaryState {
   hasError: boolean;
-  info?: string;
+  message?: string;
+  componentStack?: string;
 }
 
-/**
- * ErrorBoundary to catch UI crashes and display a fallback UI.
- */
-// Fix: Use React.Component explicitly to ensure inheritance and visibility of setState and props in TypeScript environments.
 export class ErrorBoundary extends React.Component<ErrorBoundaryProps, ErrorBoundaryState> {
-  // Using class field for state initialization for better compatibility and cleaner code.
   public state: ErrorBoundaryState = {
     hasError: false,
-    info: undefined
   };
 
-  // Standard React static method to catch errors and update state before render.
   public static getDerivedStateFromError(_error: Error): ErrorBoundaryState {
-    // Update state so the next render will show the fallback UI.
     return { hasError: true };
   }
 
-  // Captures the error information when a child component crashes.
   public componentDidCatch(error: any, info: ErrorInfo) {
-    // Log the error to an error reporting service
     console.error("UI crash:", error, info);
-    // Fix: Correctly use setState inherited from React.Component base class to store error info.
-    this.setState({ info: String(error?.message || error) });
+    this.setState({
+      message: String(error?.message || error),
+      componentStack: info?.componentStack || '',
+    });
   }
 
+  private handleClearAndReload = () => {
+    try {
+      localStorage.removeItem('liora-user-profile');
+      localStorage.removeItem('liora-needs-onboarding');
+    } catch { /* silent */ }
+    window.location.reload();
+  };
+
   public render(): React.ReactNode {
-    // Fix: Access state inherited from React.Component base class.
     if (this.state.hasError) {
       return (
-        <div style={{ padding: 24 }}>
-          <h3>Something went wrong.</h3>
-          <p>Please try again or hit “Restore checkpoint”.</p>
-          {this.state.info && (
-            <pre
-              style={{
-                whiteSpace: "pre-wrap",
-                background: "#fff8",
-                padding: 12,
-              }}
-            >
-              {this.state.info}
+        <div style={{ padding: 24, maxWidth: 640, margin: '40px auto', fontFamily: 'sans-serif' }}>
+          <h3 style={{ color: '#c00', marginBottom: 8 }}>Something went wrong</h3>
+          <p style={{ color: '#555', marginBottom: 16 }}>
+            Your profile data may be in an unexpected format. Click the button below to clear it and start fresh.
+          </p>
+
+          <button
+            onClick={this.handleClearAndReload}
+            style={{
+              background: '#18181b', color: '#fff', border: 'none',
+              padding: '10px 20px', borderRadius: 8, cursor: 'pointer',
+              fontSize: 14, fontWeight: 600, marginBottom: 24,
+            }}
+          >
+            Clear Profile Data &amp; Reload
+          </button>
+
+          <details style={{ marginTop: 8 }}>
+            <summary style={{ cursor: 'pointer', color: '#888', fontSize: 12 }}>
+              Technical details (for debugging)
+            </summary>
+            <pre style={{
+              whiteSpace: 'pre-wrap', wordBreak: 'break-all',
+              background: '#f5f5f5', padding: 12, borderRadius: 6,
+              fontSize: 11, marginTop: 8, color: '#333',
+            }}>
+              Error: {this.state.message}{'\n\n'}
+              Component stack:{this.state.componentStack}
             </pre>
-          )}
+          </details>
         </div>
       );
     }
 
-    // Fix: Correctly access children from props inherited from React.Component base class.
     return this.props.children;
   }
 }

@@ -55,7 +55,7 @@ const sanitizeProfile = (raw: unknown): StoredUserProfile | null => {
             spice: toNum(p.spice, 3),
             allergens: toStrArr(p.allergens),
             diet: toStr(p.diet) || 'No specific diet',
-            avoid: toStr(p.avoid) || 'None',
+            avoid: toStrArr(p.avoid).length ? toStrArr(p.avoid) : [],
             vibe: toStr(p.vibe) || 'Cozy and casual',
         },
         aiPreferences: (r.aiPreferences && typeof r.aiPreferences === 'object')
